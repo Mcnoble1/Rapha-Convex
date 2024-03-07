@@ -1,4 +1,6 @@
-import { useState, useRef, ChangeEvent, useContext, FormEvent, useEffect } from 'react';
+import { useQuery, useMutation } from "convex/react";
+import { api } from "../../../convex/_generated/api";
+import { useState, useRef, ChangeEvent, FormEvent, useEffect } from 'react';
 import Sidebar from '../../components/DoctorSidebar.tsx';
 import Header from '../../components/Header.tsx';
 import CoverOne from '../../images/entertainment.png';
@@ -9,23 +11,20 @@ import 'react-toastify/dist/ReactToastify.css';
 
 const Profile = () => {
 
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  // const { web5, myDid, profileProtocolDefinition } = useContext( Web5Context);
+  const createDoctor = useMutation(api.messages.createDoctor);
+  const fetchDoctor = useQuery(api.messages.fetchDoctor);
 
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [usersDetails, setUsersDetails] = useState<User[]>([]);
-  const [signedVcJwt, setSignedVcJwt] = useState("");
   const [loading, setLoading] = useState(false);
   const [popupOpen, setPopupOpen] = useState(false);
-  const [recipientDid, setRecipientDid] = useState("");
-  const [sharePopupOpen, setSharePopupOpen] = useState(false);
-  const [shareLoading, setShareLoading] = useState(false);
   const [updateLoading, setUpdateLoading] = useState(false);
   const [userToDeleteId, setUserToDeleteId] = useState<number | null>(null);
   const [isDeleteConfirmationVisible, setDeleteConfirmationVisible] = useState(false);
   const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
   const [fetchDetailsLoading, setFetchDetailsLoading] = useState(false);
   const [popupOpenMap, setPopupOpenMap] = useState<{ [key: number]: boolean }>({});
-  const [personalData, setPersonalData] = useState<{ name: string; yearsOfExperience: string; status: string; dateOfBirth: string; phone: string; hospital: string; specialty: string; identificationNumber: string; registrationNumber: string; gender: string; homeAddress: string; email: string; city: string; state: string; country: string; image: File | null }>({
+  const [personalData, setPersonalData] = useState<{ name: string; yearsOfExperience: string; status: string; dateOfBirth: string; phone: string; hospital: string; specialty: string; identificationNumber: string; registrationNumber: string; gender: string; homeAddress: string; email: string; city: string; state: string; country: string; }>({
     name: '',
     dateOfBirth: '',
     hospital: '',
@@ -41,13 +40,7 @@ const Profile = () => {
     state: '',
     country: '',
     phone: '',
-    image: null
   }); 
-  const parentId = localStorage.getItem('recordId');
-  const contextId = localStorage.getItem('contextId');
-
-  const [imageURL, setImageURL] = useState("");
-
 
   const trigger = useRef<HTMLButtonElement | null>(null);
   const popup = useRef<HTMLDivElement | null>(null); 
@@ -55,9 +48,7 @@ const Profile = () => {
 
   useEffect(() => {
    
-    fetchHealthDetails();
-    fetchPictureDetails();
-    vcJWT();
+    // fetchDoctor();
    
   }, []);
 
@@ -79,7 +70,6 @@ const Profile = () => {
           state: user.state,
           country: user.country,
           phone: user.phone,
-          image: user.image, 
           status: user.status,
         });
       }
@@ -88,23 +78,6 @@ const Profile = () => {
       ...prevMap,
       [userId]: !prevMap[userId],
     }));
-  };
-
-  const handleImageChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-  
-    const file = e.target.files?.[0];
-  
-      if (file) {
-        setSelectedFileName(file.name);
-      }
-  
-    setPersonalData((prevData) => ({
-      ...prevData,
-      [name]: value,
-    }));
-
-    handleAddPicture(e);
   };
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -173,27 +146,8 @@ const Profile = () => {
     personaldata.append("status", personalData.status);
   
     try {
-      let record;
-      // console.log(personalData);
-      record = await writeProfileToDwn(personalData);
-  
-      if (record) {    
-        console.log(record);    
-        console.log(adminDid);
-        const DIDs = [myDid, adminDid];
-        await Promise.all(
-        DIDs.map(async (did) => {
-          const { status } = await record.send(did);
-        })
-      );
-      } else {
-        toast.error('Failed to create health record', {
-          position: toast.POSITION.TOP_RIGHT,
-          autoClose: 3000, 
-          });
-          setLoading(false);
-        throw new Error('Failed to create health record');       
-      }
+      console.log(personalData);
+      await createDoctor(personalData);
   
       setPersonalData({
         name: '',
@@ -211,9 +165,8 @@ const Profile = () => {
         state: '',
         country: '',
         phone: '',
-        image: null
       })
-      fetchHealthDetails();
+      // fetchDoctor();
       setPopupOpen(false);
       toast.success('Successfully created health record', {
         position: toast.POSITION.TOP_RIGHT,
@@ -232,43 +185,6 @@ const Profile = () => {
       } 
   };
 
-  const writeProfileToDwn = async (profileData) => {
-
-    const currentDate = new Date().toLocaleDateString();
-    const timestamp = `${currentDate}`;
-
-    try {
-      // console.log(profileData)
-      const healthProtocol = profileProtocolDefinition;
-      const { record, status } = await web5.dwn.records.write({
-        data: {...profileData, timestamp: timestamp, sender: myDid },
-        message: {
-          protocol: healthProtocol.protocol,
-          protocolPath: 'doctorProfile',
-          schema: healthProtocol.types.doctorProfile.schema,
-          recipient: myDid,
-          published: true,
-        },
-      });
-      console.log(record);
-      if (status === 200) {
-        return { ...profileData, recordId: record.id}
-      } 
-      // console.log('Successfully wrote doctor details to DWN:', record);
-      toast.success('Doctor Profile Details written to DWN', {
-        position: toast.POSITION.TOP_RIGHT,
-        autoClose: 3000, 
-      });
-      return record;
-    } catch (err) {
-      console.error('Failed to write doctor profile details to DWN:', err);
-      toast.error('Failed to write doctor profile details to DWN. Please try again later.', {
-        position: toast.POSITION.TOP_RIGHT,
-        autoClose: 3000,
-      });
-    }
-   }; 
-
     
 const closePopup = (userId: string) => {
   setPopupOpenMap((prevMap) => ({
@@ -277,98 +193,6 @@ const closePopup = (userId: string) => {
   }));
 };
 
-const fetchHealthDetails = async () => {
-  setFetchDetailsLoading(true);
-  try {
-    const response = await web5.dwn.records.query({
-      from: myDid,
-      message: {
-        filter: {
-            protocol: 'https://rapha.com/protocol',
-            protocolPath: 'doctorProfile',
-        },
-      },
-    });
-    console.log('Health Details:', response);
-
-    if (response.status.code === 200) {
-      const healthDetails = await Promise.all(
-        response.records.map(async (record) => {
-          const data = await record.data.json();
-          // console.log(data);
-        localStorage.setItem('recordId', record.id);
-        localStorage.setItem('contextId', record.contextId);
-          return {
-            ...data,
-            recordId: record.id,
-          };
-        })
-      );
-      console.log(healthDetails)
-      setUsersDetails(healthDetails);
-      // console.log(healthDetails);
-      // toast.success('Successfully fetched doctor details', {
-      //   position: toast.POSITION.TOP_RIGHT,
-      //   autoClose: 3000,
-      // });
-      setFetchDetailsLoading(false);
-    } else {
-      console.error('No doctor details found');
-      toast.error('Failed to fetch doctor details', {
-        position: toast.POSITION.TOP_RIGHT,
-        autoClose: 3000,
-      });
-    }
-    setFetchDetailsLoading(false);
-  } catch (err) {
-    console.error('Error in fetchDOctorDetails:', err);
-    toast.error('Error in fetchDOctorDetails. Please try again later.', {
-      position: toast.POSITION.TOP_RIGHT,
-      autoClose: 5000,
-    });
-    setFetchDetailsLoading(false);
-  };
-};
-
-
-const shareHealthDetails = async (recordId: string) => {
-  setShareLoading(true);
-  try {
-    const response = await web5.dwn.records.query({
-      message: {
-        filter: {
-          recordId: recordId,
-        },
-      },
-    });
-
-    if (response.records && response.records.length > 0) {
-      const record = response.records[0];
-      const { status } = await record.send(recipientDid);
-      console.log('Send record status in shareProfile', status);
-      toast.success('Successfully shared doctor record', {
-        position: toast.POSITION.TOP_RIGHT,
-        autoClose: 3000,
-      });
-      setShareLoading(false);
-      setSharePopupOpen(false);
-    } else {
-      console.error('No record found with the specified ID');
-      toast.error('Failed to share doctor record', {
-        position: toast.POSITION.TOP_RIGHT,
-        autoClose: 3000,
-      });
-    }
-    setShareLoading(false);
-  } catch (err) {
-    console.error('Error in shareProfile:', err);
-    toast.error('Error in shareProfile. Please try again later.', {
-      position: toast.POSITION.TOP_RIGHT,
-      autoClose: 5000,
-    });
-    setShareLoading(false);
-  }
-};
 
 const showDeleteConfirmation = (userId: string) => {
     setUserToDeleteId(userId);
@@ -427,7 +251,6 @@ const showDeleteConfirmation = (userId: string) => {
   }
 };
 
-
 const deleteHealthDetails = async (recordId) => {
   try {
     const response = await web5.dwn.records.query({
@@ -477,231 +300,6 @@ const deleteHealthDetails = async (recordId) => {
   }
 };
 
-const handleAddPicture = async (e: FormEvent) => {
-  e.preventDefault();
-  setLoading(true); 
-    
-  // const formdata = new FormData();
-  // formdata.append('image', fileInputRef.current?.files?.[0], fileInputRef.current?.files?.[0].name);
-
-  const blob = new Blob(fileInputRef.current.files, { type: "image/png" });
-
-  try {
-    let record;
-    console.log(blob);
-    record = await writePictureToDwn(blob);
-    console.log(record);
-    if (record) {
-      const { status } = await record.send(myDid);
-      // console.log("Send record status in handleAddPicture", status);
-    } else {
-      toast.error('Failed to create picture record', {
-        position: toast.POSITION.TOP_RIGHT,
-        autoClose: 3000, 
-        });
-        setLoading(false);
-      throw new Error('Failed to create picture record');       
-    }
-
-    setSelectedFileName("Click to add Image")
-    fetchPictureDetails();
-    setPopupOpen(false);
-    // toast.success('Successfully created picture record', {
-    //   position: toast.POSITION.TOP_RIGHT,
-    //   autoClose: 3000, 
-    // });
-
-    setLoading(false);
-
-  } catch (err) {
-      console.error('Error in handleAddPicture:', err);
-      toast.error('Error in handleAddPicture. Please try again later.', {
-        position: toast.POSITION.TOP_RIGHT,
-        autoClose: 5000, // Adjust the duration as needed
-      });
-      setLoading(false);
-    } 
-};
-
-   const writePictureToDwn = async (pictureData : any) => {
-    try {
-      console.log(pictureData)
-      const pictureProtocol = profileProtocolDefinition;
-      const { record, status } = await web5.dwn.records.write({
-        data: pictureData,
-        message: {
-          protocol: pictureProtocol.protocol,
-          protocolPath: 'doctorProfile/profileImage',
-          schema: pictureProtocol.types.profileImage.schema,
-          recipient: myDid,
-          dataFormat: "image/png",
-          parentId: parentId,
-          contextId: contextId,
-        },
-      });
-      console.log(record);
-
-      if (status === 200) {
-        return { ...pictureData, recordId: record.id}
-      } 
-      console.log('Successfully wrote picture details to DWN:', record);
-      toast.success('Picture Details written to DWN', {
-        position: toast.POSITION.TOP_RIGHT,
-        autoClose: 3000, 
-      });
-      return record;
-    } catch (err) {
-      console.error('Failed to write picture details to DWN:', err);
-      toast.error('Failed to write picture details to DWN. Please try again later.', {
-        position: toast.POSITION.TOP_RIGHT,
-        autoClose: 3000,
-      });
-    }
-   }; 
-
-   const fetchPictureDetails = async () => {
-    setFetchDetailsLoading(true);
-    try {
-      const response = await web5.dwn.records.query({
-        from: myDid,
-        message: {
-          filter: {
-              protocol: 'https://rapha.com/protocol',
-              protocolPath: 'doctorProfile/profileImage',
-          },
-        },
-      });
-      console.log('Picture Details:', response);
-  
-    response.records.forEach( async (imageRec) => {
-    // console.log('this is the each image record', imageRec);
-    // // Get the blob of the image data
-    const imageId = imageRec.id
-    // console.log(imageId)
-     const {record, status }= await web5.dwn.records.read({
-      message: {
-         filter: {
-          recordId: imageId,
-         },
-      },
-      });
-    // console.log ({record, status})
-  
-        const imageresult = await record.data.blob();
-        // console.log(imageresult)
-        const imageUrl = URL.createObjectURL(imageresult);
-        // console.log(imageUrl)
-        setImageURL(imageUrl);
-      })
-      // toast.success('Successfully fetched picture details', {
-      //     position: toast.POSITION.TOP_RIGHT,
-      //     autoClose: 3000,
-      //   });
-  
-      setFetchDetailsLoading(false);
-    } catch (err) {
-      console.error('Error in fetchPictureDetails:', err);
-      toast.error('Error in fetchPictureDetails. Please try again later.', {
-        position: toast.POSITION.TOP_RIGHT,
-        autoClose: 5000,
-      });
-      setFetchDetailsLoading(false);
-    };
-  };
-
-
-
-
-
-  const vcJWT = async () => {
-    try {
-      const response = await web5.dwn.records.query({
-        from: myDid,
-        message: {
-          filter: {
-              schema: 'LicenseCredential',
-              dataFormat: 'application/vc+jwt',
-          },
-        },
-      });
-      console.log('vcJWT:', response);
-  
-      if (response.status.code === 200) {
-        const jwt = await Promise.all(
-          response.records.map(async (record) => {
-            const data = await record.data.text();
-            console.log(data);
-            setSignedVcJwt(data);
-            return {
-              ...data,
-              recordId: record.id,
-            };
-          })
-        );        
-      } else {
-        console.error('No jwt details found');
-      }
-    } catch (err) {
-      console.error('Error in fetching jwt:', err);
-    };
-  };
-
-
-// VC Presentation Exchange
-if (signedVcJwt !== ""  && signedVcJwt !== undefined) {
-const parsedVc = VerifiableCredential.parseJwt({ vcJwt: signedVcJwt });
-
-console.log("ParsedVC:", parsedVc);
-
-const presentationDefinition = {
-  'id'                : 'presDefId123',
-  'name'              : 'Rapha Medical Practitioner Presentation Definition',
-  'purpose'           : 'for proving medical practitioner license',
-  'input_descriptors' : [
-    {
-      'id'          : 'licenseStatus',
-      'purpose'     : 'is your license valid?',
-      'constraints' : {
-        'fields': [
-          {
-            'path': [
-              '$.credentialSubject.licenseStatus',
-            ]
-          }
-        ]
-      }
-    }
-  ]
-};
-
-const definitionValidation = PresentationExchange.validateDefinition({ presentationDefinition });
-console.log("Definition Validation:", definitionValidation);
-
-// Does VC Satisfy the Presentation Definition
-
-try {
-    PresentationExchange.satisfiesPresentationDefinition({vcJwts: [signedVcJwt], presentationDefinition: presentationDefinition});
-    console.log('\nVC Verification successful!\n');
-    usersDetails.filter((user) => user.status = 'Verified');
-
-    toast.success('You are now a Verified Rapha Doctor', {
-      position: toast.POSITION.TOP_RIGHT,
-      autoClose: 3000, 
-    });
-  } catch (err) {
-    console.log('\nVC Verification failed: ' + err.message + '\n');
-    toast.success('You are not yet verified', {
-      position: toast.POSITION.TOP_RIGHT,
-      autoClose: 3000, 
-    });
-  }
-
-  // Create Presentation Result that contains a Verifiable Presentation and Presentation Submission
-const presentationResult = PresentationExchange.createPresentationFromCredentials({vcJwts: [signedVcJwt], presentationDefinition: presentationDefinition });
-console.log('\nPresentation Result: ' + JSON.stringify(presentationResult));
-
-};
-
   return (
     <>
       <div className="dark:bg-boxdark-2 dark:text-bodydark">
@@ -709,9 +307,9 @@ console.log('\nPresentation Result: ' + JSON.stringify(presentationResult));
         <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
         <div className="relative flex flex-1 flex-col overflow-y-auto overflow-x-hidden">
         <Header sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
-        {usersDetails.length > 0 ? (
+        {fetchDoctor?.length > 0 ? (
           <main>
-            {usersDetails.map((user, index) => (
+            {fetchDoctor?.map((user, index) => (
             <div className="overflow-hidden rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
             <div className="relative z-20 h-35 md:h-50">
               <img
@@ -723,7 +321,7 @@ console.log('\nPresentation Result: ' + JSON.stringify(presentationResult));
           <div className="px-4 pb-6 lg:pb-8 xl:pb-11.5">
             <div className="relative z-30 mx-auto -mt-22 h-30 w-full max-w-30 rounded-full bg-white/20 p-1 backdrop-blur sm:h-44 sm:max-w-44 sm:p-3">
               <div className="relative drop-shadow-2">
-                <img src={imageURL || userSix} alt="profile" />
+                {/* <img src={imageURL || userSix} alt="profile" /> */}
                 <label
                   htmlFor="profile"
                   className="absolute bottom-0 right-0 flex h-8.5 w-8.5 cursor-pointer items-center justify-center rounded-full bg-primary text-white hover:bg-opacity-90 sm:bottom-2 sm:right-2"
@@ -754,7 +352,7 @@ console.log('\nPresentation Result: ' + JSON.stringify(presentationResult));
                     name="profile"
                     accept="image/*"
                     ref={fileInputRef}
-                    onChange={handleImageChange}
+                    // onChange={handleImageChange}
                     id="profile"
                     className="sr-only"
                   />
@@ -858,100 +456,7 @@ console.log('\nPresentation Result: ' + JSON.stringify(presentationResult));
                 </div>
 
                   <div className='w-full flex flex-row justify-evenly mb-5'>
-                    <div className="relative">
-                      <button
-                        ref={trigger}
-                        onClick={() => setSharePopupOpen(!sharePopupOpen)}
-                        className="inline-flex items-center justify-center rounded-full bg-success py-3 px-7 text-center font-medium text-white hover:bg-opacity-90 lg:px-8 xl:px-10"
-                      >
-                        Share
-                      </button>
-                      {sharePopupOpen && (
-                          <div
-                            ref={popup}
-                            className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50"
-                          >
-                            <div
-                                className="lg:mt-15 lg:w-1/2 rounded-lg bg-white dark:bg-dark pt-3 px-4 shadow-md"
-                                style={{ maxHeight: 'calc(100vh - 200px)', overflowY: 'scroll' }}
-                              >      
-                              <div
-                                className="w-full wow fadeInUp mb-12 rounded-lg bg-primary/[5%] py-11 px-8 dark:bg-dark sm:p-[55px] lg:mb-5 lg:px-8 xl:p-[55px]"
-                                data-wow-delay=".15s
-                                ">        
-                                  <div className="flex flex-row justify-between ">
-                                    <h2 className="text-xl font-semibold mb-4">Share Health Details</h2>
-                                    <div className="flex justify-end">
-                                      <button
-                                        onClick={() => setSharePopupOpen(false)}
-                                        className="text-blue-500 hover:text-gray-700 focus:outline-none"
-                                      >
-                                        <svg
-                                          xmlns="http://www.w3.org/2000/svg"
-                                          className="h-5 w-5 fill-current bg-primary rounded-full p-1 hover:bg-opacity-90"
-                                          fill="none"
-                                          viewBox="0 0 24 24"
-                                          stroke="white"
-                                        >
-                                          <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth="2"
-                                            d="M6 18L18 6M6 6l12 12"
-                                          />
-                                        </svg>
-                                      </button>
-                                    </div>  
-                                  </div>
-                                <form>
-                              <div className="-mx-4 flex flex-wrap">
-                                <div className="w-full px-4">
-                                  <div className="mb-8">
-                                    <label
-                                      htmlFor="recipientDid"
-                                      className="mb-3 block text-sm font-medium text-dark dark:text-white"
-                                    >
-                                      Recipient DID
-                                    </label>
-                                    <div>
-                                    <input
-                                      type="text"
-                                      name="recipientDid"
-                                      value={recipientDid}
-                                      onChange={(e) => setRecipientDid(e.target.value)}
-                                      placeholder="Paste Recipient DID"
-                                      required
-                                      className="w-full rounded-lg border border-transparent py-3 px-6 text-base text-body-color placeholder-body-color shadow-one outline-none focus:border-primary focus-visible:shadow-none dark:bg-[#242B51] dark:shadow-signUp"
-                                    />
-                                    </div>
-                                  </div>
-                                </div>
-                                
-                                
-                                <div className="w-full px-4">
-                                  <button 
-                                    type="button"
-                                    onClick={() => shareHealthDetails(user.recordId)}
-                                    disabled={shareLoading}
-                                    className="rounded-lg bg-primary py-4 px-9 text-base font-medium text-white transition duration-300 ease-in-out hover:bg-opacity-80 hover:shadow-signUp">
-                                    {shareLoading ? (
-                                      <div className="flex items-center">
-                                        <div className="spinner"></div>
-                                        <span className="pl-1">Sharing...</span>
-                                      </div>
-                                    ) : (
-                                      <>Share</>
-                                    )}
-                                  </button>
-                                </div>
-                              </div>
-                                </form>
-                                </div>
-                              </div>
-                          </div>
-                        )}
-                    </div>
-
+                    
                     <div className="relative">
                       <button
                         onClick={() => togglePopup(user.recordId)}                      

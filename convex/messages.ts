@@ -2,11 +2,28 @@ import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { api } from "./_generated/api";
 
+
+export const fetchDoctor = query({
+    args: {},
+    handler: async (ctx) => {
+        const doctor = await ctx.db.query("doctor").collect();
+        return doctor;
+    },
+    });
+
 export const fetchDoctors = query({
     args: {},
     handler: async (ctx) => {
         const doctors = await ctx.db.query("doctors").collect();
         return doctors;
+    },
+    });
+
+export const fetchPatient = query({
+    args: {},
+    handler: async (ctx) => {
+        const patient = await ctx.db.query("patient").collect();
+        return patient;
     },
     });
 
@@ -17,7 +34,7 @@ export const fetchPatients = query({
         return patients;
     },
     });
-
+    
 export const fetchAppointments = query({
     args: {},
     handler: async (ctx) => {
@@ -51,7 +68,7 @@ export const send = mutation({
 });
 
 export const createDoctor = mutation({
-    args: { name: v.string(), dateOfBirth: v.string(), email: v.string(), phone: v.number(), hospital: v.string(), specialty: v.string(), registrationNumber: v.string(), identificationNumber: v.number(), yearsOfExperience: v.number(), gender: v.string(), homeAddress: v.string(), status: v.string(), city: v.string(), state: v.string(), country: v.string()},
+    args: { name: v.string(), dateOfBirth: v.string(), email: v.string(), phone: v.string(), hospital: v.string(), specialty: v.string(), registrationNumber: v.string(), identificationNumber: v.string(), yearsOfExperience: v.string(), gender: v.string(), homeAddress: v.string(), status: v.string(), city: v.string(), state: v.string(), country: v.string()},
     handler: async (ctx, args) => {
         const { name, dateOfBirth, email, phone, hospital, specialty, registrationNumber, identificationNumber, yearsOfExperience, gender, homeAddress, status, city, state, country } = args;
         await ctx.db.insert("doctor", {

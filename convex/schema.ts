@@ -2,7 +2,7 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
 export default defineSchema({
-  patient: defineTable({
+  patients: defineTable({
     // patientId: v.id("patients"),
     name: v.string(),
     dateOfBirth: v.string(),
@@ -25,7 +25,7 @@ export default defineSchema({
     guardianCountry: v.string(),
     guardianPhone: v.number(),
   }),
-  doctor: defineTable({
+  doctors: defineTable({
     // doctorId: v.id("doctors"),
     name: v.string(),
     dateOfBirth: v.string(),

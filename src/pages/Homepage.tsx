@@ -1,5 +1,6 @@
-import { useState, useContext } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { SignInButton } from "@clerk/clerk-react";
 import heroImage from '../images/health.png';
 import one from '../images/onee.png';
 import two from '../images/two.png';
@@ -7,6 +8,7 @@ import three from '../images/three.png';
 import four from '../images/four.png';
 import five from '../images/five.png';
 import six from '../images/six.png';
+
 const Homepage = () => {
 
   const [userType, setUserType] = useState(null);
@@ -38,14 +40,17 @@ const Homepage = () => {
           <p className="mb-5 text-5xl lg:text-6xl font-bold text-white dark:text-white">
             Welcome to Rapha
           </p>
+       
           <span className="text-3xl lg:text-4xl font-medium">All Encompassing Decentralized Healthcare Platform</span>
           </div>
           <div className="flex justify-center">
           <button 
-            onClick={() => showDeleteConfirmation()}
+            // onClick={() => showDeleteConfirmation()}
             className=" cursor-pointer rounded-lg text-2xl border border-primary bg-success p-4 text-white transition hover:bg-opacity-90"
             >
-            Get Started
+            <div className="App" onClick={() => showDeleteConfirmation()}>
+              <SignInButton mode="modal" />
+            </div>
           </button>
           {isDeleteConfirmationVisible && (
               <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-20">

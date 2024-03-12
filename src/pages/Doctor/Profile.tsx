@@ -4,15 +4,15 @@ import { useState, useRef, ChangeEvent, FormEvent, useEffect } from 'react';
 import Sidebar from '../../components/DoctorSidebar.tsx';
 import Header from '../../components/Header.tsx';
 import CoverOne from '../../images/entertainment.png';
-import userSix from '../../images/user/1.png';
 import { toast } from 'react-toastify'; 
 import 'react-toastify/dist/ReactToastify.css'; 
 
 
 const Profile = () => {
 
-  const createDoctor = useMutation(api.messages.createDoctor);
-  const fetchDoctor = useQuery(api.messages.fetchDoctor);
+  const createDoctor = useMutation(api.doctors.createDoctor);
+  const fetchDoctor = useQuery(api.doctors.getDoctors);
+  console.log(fetchDoctor);
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [usersDetails, setUsersDetails] = useState<User[]>([]);

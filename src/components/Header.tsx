@@ -1,4 +1,5 @@
 import { useState, useContext } from 'react';
+import { UserButton } from '@clerk/clerk-react';
 import DropdownUser from './DropdownUser';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCopy } from '@fortawesome/free-solid-svg-icons';
@@ -68,7 +69,9 @@ const Header = (props: {
         <div className="text-[#213960] inline-flex space-x-3 items-end justify-between">
                  
                 </div>
-          <DropdownUser />
+                <div className="App">
+              <UserButton mode="modal" />
+            </div>
         </div>
       </div>
     </header>

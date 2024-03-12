@@ -1,4 +1,6 @@
-import { useState, useRef, ChangeEvent, useContext, FormEvent, useEffect } from 'react';
+import { useQuery, useMutation } from "convex/react";
+import { api } from "../../../convex/_generated/api";
+import { useState, useRef, ChangeEvent, FormEvent, useEffect } from 'react';
 import Sidebar from '../../components/Sidebar.tsx';
 import Header from '../../components/Header.tsx';
 import CoverOne from '../../images/entertain.png';
@@ -7,22 +9,22 @@ import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css'; 
 const Profile = () => {
 
+  const createPatient = useMutation(api.patients.createPatient);
+  const fetchPatient = useQuery(api.patients.getPatient);
+  console.log(fetchPatient);
+
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  // const { web5, myDid, profileProtocolDefinition } = useContext( Web5Context);
 
   const [usersDetails, setUsersDetails] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
   const [popupOpen, setPopupOpen] = useState(false);
-  const [recipientDid, setRecipientDid] = useState("");
-  const [sharePopupOpen, setSharePopupOpen] = useState(false);
-  const [shareLoading, setShareLoading] = useState(false);
   const [updateLoading, setUpdateLoading] = useState(false);
   const [userToDeleteId, setUserToDeleteId] = useState<number | null>(null);
   const [isDeleteConfirmationVisible, setDeleteConfirmationVisible] = useState(false);
   const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
   const [fetchDetailsLoading, setFetchDetailsLoading] = useState(false);
   const [popupOpenMap, setPopupOpenMap] = useState<{ [key: number]: boolean }>({});
-  const [personalData, setPersonalData] = useState<{ name: string; dateOfBirth: string; phone: string; maritalStatus: string; identificationNumber: string; gender: string; homeAddress: string; email: string; city: string; state: string; country: string; image: File | null }>({
+  const [personalData, setPersonalData] = useState<{ name: string; dateOfBirth: string; phone: string; maritalStatus: string; identificationNumber: string; gender: string; homeAddress: string; email: string; city: string; state: string; country: string; }>({
     name: '',
     dateOfBirth: '',
     maritalStatus: '',
@@ -34,7 +36,6 @@ const Profile = () => {
     state: '',
     country: '',
     phone: '',
-    image: null
   }); 
 
   const [guardianData, setGuardianData] = useState<{ guardianName: string; guardianPhone: string; relationship: string; guardianGender: string; guardianHomeAddress: string; guardianEmail: string; guardianCity: string; guardianState: string; guardianCountry: string; }>({
@@ -49,25 +50,6 @@ const Profile = () => {
     guardianPhone: '',
   }); 
 
-  const [primaryDoctorData, setPrimaryDoctorData] = useState<{ doctorName: string; hospital: string; doctorPhone: string; specialty: string; doctorGender: string; doctorHomeAddress: string; doctorEmail: string; doctorCity: string; doctorState: string; doctorCountry: string; }>({
-    doctorName: '',
-    hospital: '',
-    specialty: '',
-    doctorGender: '',
-    doctorHomeAddress: '',
-    doctorEmail: '',
-    doctorCity: '',
-    doctorState: '',
-    doctorCountry: '',
-    doctorPhone: '',
-  }); 
-
-
-  const parentId = localStorage.getItem('recordId');
-  const contextId = localStorage.getItem('contextId');
-
-  const [imageURL, setImageURL] = useState("");
-
   const trigger = useRef<HTMLButtonElement | null>(null);
   const popup = useRef<HTMLDivElement | null>(null); 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -81,18 +63,9 @@ const Profile = () => {
     }));
   };
 
-  const handlePrimaryDoctorInputChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-  
-    setPrimaryDoctorData((prevData) => ({
-      ...prevData,
-      [name]: value,
-    }));
-  };
 
   useEffect(() => {
     fetchHealthDetails();
-    fetchPictureDetails();
   }, []);
 
   const togglePopup = (userId: string) => {
@@ -119,16 +92,6 @@ const Profile = () => {
           guardianState: user.guardianState,
           guardianCountry: user.guardianCountry,
           guardianPhone: user.guardianPhone,
-          doctorName: user.doctorName,
-          hospital: user.hospital,
-          specialty: user.specialty,
-          doctorGender: user.doctorGender,
-          doctorHomeAddress: user.doctorHomeAdress,
-          doctorEmail: user.doctorEmail,
-          doctorCity: user.doctorCity,
-          doctorState: user.doctorState,
-          doctorCountry: user.doctorCountry,
-          doctorPhone: user.doctorPhone,
         });
       }
     });
@@ -193,34 +156,9 @@ const handleAddProfile = async (e: FormEvent) => {
   guardiandata.append("guardianCountry", guardianData.guardianCountry);
   guardiandata.append("guardianPhone", guardianData.guardianPhone);
 
-  const primaryDoctordata = new FormData();
-  primaryDoctordata.append("doctorName", primaryDoctorData.doctorName);
-  primaryDoctordata.append("hospital", primaryDoctorData.hospital);
-  primaryDoctordata.append("specialty", primaryDoctorData.specialty);
-  primaryDoctordata.append("doctorGender", primaryDoctorData.doctorGender);
-  primaryDoctordata.append("doctorHomeAddress", primaryDoctorData.doctorHomeAddress);
-  primaryDoctordata.append("doctorEmail", primaryDoctorData.doctorEmail);
-  primaryDoctordata.append("doctorCity", primaryDoctorData.doctorCity);
-  primaryDoctordata.append("doctorState", primaryDoctorData.doctorState);
-  primaryDoctordata.append("doctorCountry", primaryDoctorData.doctorCountry);
-  primaryDoctordata.append("doctorPhone", primaryDoctorData.doctorPhone);
-
   try {
-    let record;
-    // console.log(personalData, guardianData, primaryDoctorData);
-    record = await writeProfileToDwn({...personalData, ...guardianData, ...primaryDoctorData});
-
-    if (record) {
-      const { status } = await record.send(myDid);
-      // console.log("Send record status in handleAddProfile", status);
-    } else {
-      toast.error('Failed to create health record', {
-        position: toast.POSITION.TOP_RIGHT,
-        autoClose: 3000, 
-        });
-        setLoading(false);
-      throw new Error('Failed to create health record');       
-    }
+    console.log(personalData, guardianData);
+    await createPatient({...personalData, ...guardianData });
 
     setPersonalData({
       name: '',
@@ -234,7 +172,6 @@ const handleAddProfile = async (e: FormEvent) => {
       state: '',
       country: '',
       phone: '',
-      image: null
     })
 
     setGuardianData({
@@ -248,26 +185,12 @@ const handleAddProfile = async (e: FormEvent) => {
       guardianCountry: '',
       guardianPhone: '',
     })
-
-    setPrimaryDoctorData({
-      doctorName: '',
-      hospital: '',
-      specialty: '',
-      doctorGender: '',
-      doctorHomeAddress: '',
-      doctorEmail: '',
-      doctorCity: '',
-      doctorState: '',
-      doctorCountry: '',
-      doctorPhone: '',
-    })
-
+    // fetchPatient();
     setPopupOpen(false);
     toast.success('Successfully created health record', {
       position: toast.POSITION.TOP_RIGHT,
       autoClose: 3000, 
     });
-    fetchHealthDetails();
     setLoading(false);
 
   } catch (err) {
@@ -278,149 +201,6 @@ const handleAddProfile = async (e: FormEvent) => {
       });
       setLoading(false);
     } 
-};
-
-const handleImageChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-  const { name, value } = e.target;
-
-  const file = e.target.files?.[0];
-
-    if (file) {
-      setSelectedFileName(file.name);
-    }
-
-  setPersonalData((prevData) => ({
-    ...prevData,
-    [name]: value,
-  }));
-
-  handleAddPicture(e);
-};
-
-
-const writeProfileToDwn = async (profileData) => {
-  try {
-    // console.log(profileData)
-    const healthProtocol = profileProtocolDefinition;
-    const { record, status } = await web5.dwn.records.write({
-      data: {...profileData, sender: myDid },
-      message: {
-        protocol: healthProtocol.protocol,
-        protocolPath: 'patientProfile',
-        schema: healthProtocol.types.patientProfile.schema,
-        recipient: myDid,
-      },
-    });
-    // console.log(record);
-    if (status === 200) {
-      
-      return { ...profileData, recordId: record.id}
-    } 
-    // console.log('Successfully wrote health details to DWN:', record);
-    toast.success('Health Details written to DWN', {
-      position: toast.POSITION.TOP_RIGHT,
-      autoClose: 3000, 
-    });
-    return record;
-  } catch (err) {
-    console.error('Failed to write health details to DWN:', err);
-    toast.error('Failed to write health details to DWN. Please try again later.', {
-      position: toast.POSITION.TOP_RIGHT,
-      autoClose: 3000,
-    });
-  }
- }; 
-
-const fetchHealthDetails = async () => {
-  setFetchDetailsLoading(true);
-  try {
-    const response = await web5.dwn.records.query({
-      from: myDid,
-      message: {
-        filter: {
-            protocol: 'https://rapha.com/protocol',
-            protocolPath: 'patientProfile',
-        },
-      },
-    });
-    // console.log('Health Details:', response);
-
-    if (response.status.code === 200) {
-      const healthDetails = await Promise.all(
-        response.records.map(async (record) => {
-          const data = await record.data.json();
-          // console.log(data);
-        localStorage.setItem('recordId', record.id);
-        localStorage.setItem('contextId', record.contextId);
-          return {
-            ...data,
-            recordId: record.id,
-          };
-        })
-      );
-      setUsersDetails(healthDetails);
-      console.log(healthDetails);
-      // toast.success('Successfully fetched health details', {
-      //   position: toast.POSITION.TOP_RIGHT,
-      //   autoClose: 3000,
-      // });
-      setFetchDetailsLoading(false);
-    } else {
-      console.error('No health details found');
-      toast.error('Failed to fetch health details', {
-        position: toast.POSITION.TOP_RIGHT,
-        autoClose: 3000,
-      });
-    }
-    setFetchDetailsLoading(false);
-  } catch (err) {
-    console.error('Error in fetchHealthDetails:', err);
-    toast.error('Error in fetchHealthDetails. Please try again later.', {
-      position: toast.POSITION.TOP_RIGHT,
-      autoClose: 5000,
-    });
-    setFetchDetailsLoading(false);
-  };
-};
-
-
-const shareHealthDetails = async (recordId: string) => {
-  setShareLoading(true);
-  try {
-    const response = await web5.dwn.records.query({
-      message: {
-        filter: {
-          recordId: recordId,
-        },
-      },
-    });
-
-    if (response.records && response.records.length > 0) {
-      const record = response.records[0];
-      const { status } = await record.send(recipientDid);
-      // console.log('Send record status in shareProfile', status);
-      toast.success('Successfully shared health record', {
-        position: toast.POSITION.TOP_RIGHT,
-        autoClose: 3000,
-      });
-      setShareLoading(false);
-      setSharePopupOpen(false);
-    } else {
-      console.error('No record found with the specified ID');
-      toast.error('Failed to share health record', {
-        position: toast.POSITION.TOP_RIGHT,
-        autoClose: 3000,
-      });
-    }
-    setShareLoading(false);
-  } catch (err) {
-    console.error('Error in shareProfile:', err);
-    toast.error('Error in shareProfile. Please try again later.', {
-      position: toast.POSITION.TOP_RIGHT,
-      autoClose: 5000,
-    });
-    setShareLoading(false);
-  }
 };
 
 const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -554,140 +334,6 @@ const deleteHealthDetails = async (recordId) => {
   }
 };
 
-const handleAddPicture = async (e: FormEvent) => {
-  e.preventDefault();
-  setLoading(true); 
-    
-  // const formdata = new FormData();
-  // formdata.append('image', fileInputRef.current?.files?.[0], fileInputRef.current?.files?.[0].name);
-
-  const blob = new Blob(fileInputRef.current.files, { type: "image/png" });
-
-  try {
-    let record;
-    // console.log(blob);
-    record = await writePictureToDwn(blob);
-    // console.log(record);
-    if (record) {
-      const { status } = await record.send(myDid);
-      // console.log("Send record status in handleAddPicture", status);
-    } else {
-      toast.error('Failed to create picture record', {
-        position: toast.POSITION.TOP_RIGHT,
-        autoClose: 3000, 
-        });
-        setLoading(false);
-      throw new Error('Failed to create picture record');       
-    }
-
-    setSelectedFileName("Click to add Image")
-    fetchPictureDetails();
-    setPopupOpen(false);
-    toast.success('Successfully created picture record', {
-      position: toast.POSITION.TOP_RIGHT,
-      autoClose: 3000, 
-    });
-
-    setLoading(false);
-
-  } catch (err) {
-      console.error('Error in handleAddPicture:', err);
-      toast.error('Error in handleAddPicture. Please try again later.', {
-        position: toast.POSITION.TOP_RIGHT,
-        autoClose: 5000, // Adjust the duration as needed
-      });
-      setLoading(false);
-    } 
-};
-
-   const writePictureToDwn = async (pictureData : any) => {
-    try {
-      // console.log(pictureData)
-      const pictureProtocol = profileProtocolDefinition;
-      const { record, status } = await web5.dwn.records.write({
-        data: pictureData,
-        message: {
-          protocol: pictureProtocol.protocol,
-          protocolPath: 'patientProfile/profileImage',
-          schema: pictureProtocol.types.profileImage.schema,
-          recipient: myDid,
-          dataFormat: "image/png",
-          parentId: parentId,
-          contextId: contextId,
-        },
-      });
-      // console.log(record);
-
-      if (status === 200) {
-        return { ...pictureData, recordId: record.id}
-      } 
-      // console.log('Successfully wrote picture details to DWN:', record);
-      toast.success('Picture Details written to DWN', {
-        position: toast.POSITION.TOP_RIGHT,
-        autoClose: 3000, 
-      });
-      return record;
-    } catch (err) {
-      console.error('Failed to write picture details to DWN:', err);
-      toast.error('Failed to write picture details to DWN. Please try again later.', {
-        position: toast.POSITION.TOP_RIGHT,
-        autoClose: 3000,
-      });
-    }
-   }; 
-
-
-   const fetchPictureDetails = async () => {
-    setFetchDetailsLoading(true);
-    try {
-      const response = await web5.dwn.records.query({
-        from: myDid,
-        message: {
-          filter: {
-              protocol: 'https://rapha.com/protocol',
-              protocolPath: 'patientProfile/profileImage',
-          },
-        },
-      });
-      // console.log('Picture Details:', response);
-  
-    response.records.forEach( async (imageRec) => {
-    // console.log('this is the each image record', imageRec);
-    // // Get the blob of the image data
-    const imageId = imageRec.id
-    // console.log(imageId)
-     const {record, status }= await web5.dwn.records.read({
-      message: {
-         filter: {
-          recordId: imageId,
-         },
-      },
-      });
-    // console.log ({record, status})
-  
-        const imageresult = await record.data.blob();
-        // console.log(imageresult)
-        const imageUrl = URL.createObjectURL(imageresult);
-        // console.log(imageUrl)
-        setImageURL(imageUrl);
-      })
-      // toast.success('Successfully fetched picture details', {
-      //     position: toast.POSITION.TOP_RIGHT,
-      //     autoClose: 3000,
-      //   });
-  
-      setFetchDetailsLoading(false);
-    } catch (err) {
-      console.error('Error in fetchPictureDetails:', err);
-      toast.error('Error in fetchPictureDetails. Please try again later.', {
-        position: toast.POSITION.TOP_RIGHT,
-        autoClose: 5000,
-      });
-      setFetchDetailsLoading(false);
-    };
-  };
-
-
   return (
     <>
       <div className="dark:bg-boxdark-2 dark:text-bodydark">
@@ -695,9 +341,9 @@ const handleAddPicture = async (e: FormEvent) => {
         <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
         <div className="relative flex flex-1 flex-col overflow-y-auto overflow-x-hidden">
         <Header sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
-        {usersDetails.length > 0 ? (
+        {fetchPatient?.length > 0 ? (
           <main>
-          {usersDetails.map((user, index) => (
+          {fetchPatient?.map((user, index) => (
             <div key={index} className="overflow-hidden rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
             <div className="relative z-20 h-35 md:h-50">
             <img
@@ -962,100 +608,6 @@ const handleAddPicture = async (e: FormEvent) => {
               </div>
 
                 <div className='w-full flex flex-row justify-evenly mb-5'>
-                  <div className="relative">
-                    <button
-                      ref={trigger}
-                      onClick={() => setSharePopupOpen(!sharePopupOpen)}
-                      className="inline-flex items-center justify-center rounded-full bg-success py-3 px-7 text-center font-medium text-white hover:bg-opacity-90 lg:px-8 xl:px-10"
-                    >
-                      Share
-                    </button>
-                    {sharePopupOpen && (
-                        <div
-                          ref={popup}
-                          className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50"
-                        >
-                          <div
-                              className="lg:mt-15 lg:w-1/2 rounded-lg bg-white dark:bg-dark pt-3 px-4 shadow-md"
-                              style={{ maxHeight: 'calc(100vh - 200px)', overflowY: 'scroll' }}
-                            >      
-                            <div
-                              className="w-full wow fadeInUp mb-12 rounded-lg bg-primary/[5%] py-11 px-8 dark:bg-dark sm:p-[55px] lg:mb-5 lg:px-8 xl:p-[55px]"
-                              data-wow-delay=".15s
-                              ">        
-                                <div className="flex flex-row justify-between ">
-                                  <h2 className="text-xl font-semibold mb-4">Share Health Details</h2>
-                                  <div className="flex justify-end">
-                                    <button
-                                      onClick={() => setSharePopupOpen(false)}
-                                      className="text-blue-500 hover:text-gray-700 focus:outline-none"
-                                    >
-                                      <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        className="h-5 w-5 fill-current bg-primary rounded-full p-1 hover:bg-opacity-90"
-                                        fill="none"
-                                        viewBox="0 0 24 24"
-                                        stroke="white"
-                                      >
-                                        <path
-                                          strokeLinecap="round"
-                                          strokeLinejoin="round"
-                                          strokeWidth="2"
-                                          d="M6 18L18 6M6 6l12 12"
-                                        />
-                                      </svg>
-                                    </button>
-                                  </div>  
-                                </div>
-                              <form>
-                            <div className="-mx-4 flex flex-wrap">
-                              <div className="w-full px-4">
-                                <div className="mb-8">
-                                  <label
-                                    htmlFor="recipientDid"
-                                    className="mb-3 block text-sm font-medium text-dark dark:text-white"
-                                  >
-                                    Recipient DID
-                                  </label>
-                                  <div>
-                                  <input
-                                    type="text"
-                                    name="recipientDid"
-                                    value={recipientDid}
-                                    onChange={(e) => setRecipientDid(e.target.value)}
-                                    placeholder="Paste Recipient DID"
-                                    required
-                                    className="w-full rounded-lg border border-transparent py-3 px-6 text-base text-body-color placeholder-body-color shadow-one outline-none focus:border-primary focus-visible:shadow-none dark:bg-[#242B51] dark:shadow-signUp"
-                                  />
-                                  </div>
-                                </div>
-                              </div>
-                              
-                              
-                              <div className="w-full px-4">
-                                <button 
-                                  type="button"
-                                  onClick={() => shareHealthDetails(user.recordId)}
-                                  disabled={shareLoading}
-                                  className="rounded-lg bg-primary py-4 px-9 text-base font-medium text-white transition duration-300 ease-in-out hover:bg-opacity-80 hover:shadow-signUp">
-                                  {shareLoading ? (
-                                    <div className="flex items-center">
-                                      <div className="spinner"></div>
-                                      <span className="pl-1">Sharing...</span>
-                                    </div>
-                                  ) : (
-                                    <>Share</>
-                                  )}
-                                </button>
-                              </div>
-                            </div>
-                              </form>
-                              </div>
-                            </div>
-                        </div>
-                      )}
-                  </div>
-
                   <div className="relative">
                     <button
                       onClick={() => togglePopup(user.recordId)}                      
@@ -1446,213 +998,6 @@ const handleAddPicture = async (e: FormEvent) => {
                                         </div>
                                       </div>
                                     </div>
-                                  </div>
-
-
-                                  <div className= "rounded-sm px-6.5 mt-10 bg-white dark:border-strokedark dark:bg-boxdark">
-                                      <h3 className="mb-2.5 block font-semibold dark:text-white">Primary Medical Provider</h3>
-                                    <div className="mb-4.5 flex flex-col gap-6 xl:flex-row">
-                                    <div className="w-full xl:w-3/5">
-                                        <label className="mb-2.5 block text-black dark:text-white">
-                                          Name
-                                        </label>
-                                        <div className={`relative ${user.doctorName ? 'bg-light-blue' : ''}`}>
-                                        <input
-                                          type="text"
-                                          name="doctorName"
-                                          required
-                                          value={user.doctorName}
-                                          onChange={handlePrimaryDoctorInputChange}
-                                          placeholder="John Doe"
-                                          className="w-full rounded-lg border-[1.5px] border-stroke bg-transparent py-2 px-5 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus-border-primary"/>
-                                        </div>
-                                      </div>
-
-                                      <div className="w-full xl:w-3/5">
-                                        <label className="mb-2.5 block text-black dark:text-white">
-                                          Hospital
-                                        </label>
-                                        <div className={`relative ${user.hospital ? 'bg-light-blue' : ''}`}>
-                                        <input
-                                          type="text" 
-                                          name="hospital"
-                                          required
-                                          placeholder='John Hopkins Hospital'
-                                          value={user.hospital}
-                                          onChange={handlePrimaryDoctorInputChange}
-                                          className="w-full rounded-lg border-[1.5px] border-stroke bg-transparent py-2 px-5 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus-border-primary"/>
-                                        </div>
-                                      </div> 
-
-                                      <div className="w-full xl:w-3/5">
-                                        <label className="mb-2.5 block text-black dark:text-white">
-                                        Specialty
-                                        </label>
-                                        <div className={`relative ${user.specialty ? 'bg-light-blue' : ''}`}>
-                                        <select
-                              name="specialty"
-                              value={primaryDoctorData.specialty}
-                              onChange={handlePrimaryDoctorInputChange}
-                              required
-                              className="w-full rounded-lg border-[1.5px] border-stroke bg-transparent py-2 px-5 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus-border-primary">
-                              <option value="">Select Specialty</option>                        
-                              <option value="Family Medicine">Family Medicine</option>
-                              <option value="General Medicine">General Medicine</option>
-                              <option value="Internal Medicine">Internal Medicine</option>
-                              <option value="Emergency Medicine">Emergency Medicine</option>
-                              <option value="Preventive Medicine">Preventive Medicine</option>
-                              <option value="Occupational Medicine">Occupational Medicine</option>
-                              <option value="Pediatrics">Pediatrics</option>
-                              <option value="Psychiatry">Psychiatry</option>
-                              <option value="Surgery">Surgery</option>
-                              <option value="Obstetrics and Gynecology">Obstetrics and Gynecology</option>
-                              <option value="Neurology">Neurology</option>
-                              <option value="Cardiology">Cardiology</option>
-                              <option value="Dermatology">Dermatology</option>
-                              <option value="Ophthalmology">Ophthalmology</option>
-                              <option value="Orthopedics">Orthopedics</option>
-                              <option value="Otolaryngology">Otolaryngology</option>
-                              <option value="Urology">Urology</option>
-                              <option value="Radiology">Radiology</option>
-                              <option value="Anesthesiology">Anesthesiology</option>
-                              <option value="Pathology">Pathology</option>
-                              <option value="Medical Genetics">Medical Genetics</option>
-                              <option value="Public Health">Public Health</option>
-                              <option value="Nursing">Nursing</option>
-                              <option value="Physiotherapy">Physiotherapy</option>
-                              <option value="Dentistry">Dentistry</option>
-                              <option value="Nutrition">Nutrition</option>
-                              <option value="Veterinary Medicine">Veterinary Medicine</option>
-                              <option value="Other">Other</option>
-                                </select>
-                                        </div>
-                                      </div>
-                                    </div>
-
-                                    <div className="mb-4.5 flex flex-col gap-6 xl:flex-row">
-
-                                    <div className="w-full xl:w-3/5">
-                                        <label className="mb-2.5 block text-black dark:text-white">
-                                          Email Address
-                                        </label>
-                                        <div className={`relative ${user.doctorEmail ? 'bg-light-blue' : ''}`}>
-                                        <input
-                                          type="text"
-                                          name="doctorEmail"
-                                          value={user.doctorEmail}
-                                          required
-                                          onChange={handlePrimaryDoctorInputChange}
-                                          placeholder="xyz@gmail.com"
-                                          className="w-full rounded-lg border-[1.5px] border-stroke bg-transparent py-2 px-5 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus-border-primary"/>
-                                        </div>
-                                      </div>
-
-                                      <div className="w-full xl:w-3/5">
-                                        <label className="mb-2.5 block text-black dark:text-white">
-                                          Gender
-                                        </label>
-                                        <div className={`relative ${user.doctorGender ? 'bg-light-blue' : ''}`}>
-                                        <select
-                                              name="doctorGender"
-                                              value={user.doctorGender}
-                                              onChange={handlePrimaryDoctorInputChange}
-                                              required
-                                              className="w-full rounded-lg border-[1.5px] border-stroke bg-transparent py-2 px-5 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus-border-primary">
-                                              <option value="">Select Gender</option>                        
-                                              <option value="Male">Male</option>
-                                              <option value="Female">Female</option>
-                                            </select>                        
-                                          </div>
-                                      </div>
-
-                                      <div className="w-full xl:w-3/5">
-                                        <label className="mb-2.5 block text-black dark:text-white">
-                                          Phone Number
-                                        </label>
-                                        <div className={`relative ${user.doctorPhone ? 'bg-light-blue' : ''}`}>
-                                        <input
-                                          type="text"
-                                          name="doctorPhone"
-                                          value={user.doctorPhone}
-                                          required
-                                          onChange={handlePrimaryDoctorInputChange}
-                                          placeholder="+234 80123456"
-                                          className="w-full rounded-lg border-[1.5px] border-stroke bg-transparent py-2 px-5 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus-border-primary"/>
-                                        </div>
-                                      </div>
-                                    </div>
-
-                                    <div className="mb-4.5 flex flex-col gap-6 xl:flex-row">
-                                                          
-                                      <div className="w-full xl:w-3/5">
-                                        <label className="mb-2.5 block text-black dark:text-white">
-                                          Home Address
-                                        </label>
-                                        <div className={`relative ${user.doctorHomeAddress ? 'bg-light-blue' : ''}`}>
-                                        <input
-                                          type="text"
-                                          name="doctorHomeAddress"
-                                          value={user.doctorHomeAddress}
-                                          required
-                                          onChange={handlePrimaryDoctorInputChange}
-                                          placeholder="Phoenix Court, 1st Avenue, Gwarinpa, Abuja"
-                                          className="w-full rounded-lg border-[1.5px] border-stroke bg-transparent py-2 px-5 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus-border-primary"/>
-                                        </div>
-                                      </div>
-
-                                      <div className="w-full xl:w-3/5">
-                                        <label className="mb-2.5 block text-black dark:text-white">
-                                          City
-                                        </label>
-                                        <div className={`relative ${user.doctorCity ? 'bg-light-blue' : ''}`}>
-                                        <input
-                                          type="text"
-                                          name="doctorCity"
-                                          value={user.doctorCity}
-                                          required
-                                          onChange={handlePrimaryDoctorInputChange}
-                                          placeholder="Lagos"
-                                          className="w-full rounded-lg border-[1.5px] border-stroke bg-transparent py-2 px-5 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus-border-primary"/>
-                                        </div>
-                                      </div>
-
-                                      <div className="w-full xl:w-3/5">
-                                        <label className="mb-2.5 block text-black dark:text-white">
-                                          State
-                                        </label>
-                                        <div className={`relative ${user.doctorState ? 'bg-light-blue' : ''}`}>
-                                        <input
-                                          type="text"
-                                          name="doctorState"
-                                          value={user.doctorState}
-                                          required
-                                          onChange={handlePrimaryDoctorInputChange}
-                                          placeholder="US-CA"
-                                          className="w-full rounded-lg border-[1.5px] border-stroke bg-transparent py-2 px-5 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus-border-primary"/>
-                                        </div>
-                                      </div>
-
-                                    </div>
-
-                                    <div className="mb-4.5 flex flex-col gap-6 xl:flex-row">
-                                                          
-                                    
-                                      <div className="w-ful l xl:w-2/5">
-                                        <label className="mb-2.5 block text-black dark:text-white">
-                                          Country
-                                        </label>
-                                        <div className={`relative ${user.doctorCountry ? 'bg-light-blue' : ''}`}>
-                                        <input
-                                          type="text"
-                                          name="doctorCountry"
-                                          value={user.doctorCountry}
-                                          required
-                                          onChange={handlePrimaryDoctorInputChange}
-                                          placeholder="USA"
-                                          className="w-full rounded-lg border-[1.5px] border-stroke bg-transparent py-2 px-5 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus-border-primary"/>
-                                        </div>
-                                      </div>
-                                    </div>      
                                   </div>
                                   </form>
                                 <button
@@ -2106,213 +1451,6 @@ const handleAddPicture = async (e: FormEvent) => {
                             </div>
                           </div>
                         </div>
-                      </div>
-    
-    
-                      <div className= "rounded-sm px-6.5 mt-10 bg-white dark:border-strokedark dark:bg-boxdark">
-                          <h3 className="mb-2.5 block font-semibold dark:text-white">Primary Medical Provider</h3>
-                        <div className="mb-4.5 flex flex-col gap-6 xl:flex-row">
-                        <div className="w-full xl:w-3/5">
-                            <label className="mb-2.5 block text-black dark:text-white">
-                              Name
-                            </label>
-                            <div className={`relative ${primaryDoctorData.doctorName ? 'bg-light-blue' : ''}`}>
-                            <input
-                              type="text"
-                              name="doctorName"
-                              required
-                              value={primaryDoctorData.doctorName}
-                              onChange={handlePrimaryDoctorInputChange}
-                              placeholder="John Doe"
-                              className="w-full rounded-lg border-[1.5px] border-stroke bg-transparent py-2 px-5 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus-border-primary"/>
-                            </div>
-                          </div>
-    
-                          <div className="w-full xl:w-3/5">
-                            <label className="mb-2.5 block text-black dark:text-white">
-                              Hospital
-                            </label>
-                            <div className={`relative ${primaryDoctorData.hospital ? 'bg-light-blue' : ''}`}>
-                            <input
-                              type="text" 
-                              name="hospital"
-                              required
-                              placeholder='John Hopkins Hospital'
-                              value={primaryDoctorData.hospital}
-                              onChange={handlePrimaryDoctorInputChange}
-                              className="w-full rounded-lg border-[1.5px] border-stroke bg-transparent py-2 px-5 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus-border-primary"/>
-                            </div>
-                          </div> 
-    
-                          <div className="w-full xl:w-3/5">
-                            <label className="mb-2.5 block text-black dark:text-white">
-                             Specialty
-                            </label>
-                            <div className={`relative ${primaryDoctorData.specialty ? 'bg-light-blue' : ''}`}>
-                            <select
-                              name="specialty"
-                              value={primaryDoctorData.specialty}
-                              onChange={handlePrimaryDoctorInputChange}
-                              required
-                              className="w-full rounded-lg border-[1.5px] border-stroke bg-transparent py-2 px-5 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus-border-primary">
-                              <option value="">Select Specialty</option>                        
-                              <option value="Family Medicine">Family Medicine</option>
-                              <option value="General Medicine">General Medicine</option>
-                              <option value="Internal Medicine">Internal Medicine</option>
-                              <option value="Emergency Medicine">Emergency Medicine</option>
-                              <option value="Preventive Medicine">Preventive Medicine</option>
-                              <option value="Occupational Medicine">Occupational Medicine</option>
-                              <option value="Pediatrics">Pediatrics</option>
-                              <option value="Psychiatry">Psychiatry</option>
-                              <option value="Surgery">Surgery</option>
-                              <option value="Obstetrics and Gynecology">Obstetrics and Gynecology</option>
-                              <option value="Neurology">Neurology</option>
-                              <option value="Cardiology">Cardiology</option>
-                              <option value="Dermatology">Dermatology</option>
-                              <option value="Ophthalmology">Ophthalmology</option>
-                              <option value="Orthopedics">Orthopedics</option>
-                              <option value="Otolaryngology">Otolaryngology</option>
-                              <option value="Urology">Urology</option>
-                              <option value="Radiology">Radiology</option>
-                              <option value="Anesthesiology">Anesthesiology</option>
-                              <option value="Pathology">Pathology</option>
-                              <option value="Medical Genetics">Medical Genetics</option>
-                              <option value="Public Health">Public Health</option>
-                              <option value="Nursing">Nursing</option>
-                              <option value="Physiotherapy">Physiotherapy</option>
-                              <option value="Dentistry">Dentistry</option>
-                              <option value="Nutrition">Nutrition</option>
-                              <option value="Veterinary Medicine">Veterinary Medicine</option>
-                              <option value="Other">Other</option>
-                                </select>
-                            </div>
-                          </div>
-                        </div>
-    
-                        <div className="mb-4.5 flex flex-col gap-6 xl:flex-row">
-    
-                        <div className="w-full xl:w-3/5">
-                            <label className="mb-2.5 block text-black dark:text-white">
-                              Email Address
-                            </label>
-                            <div className={`relative ${primaryDoctorData.doctorEmail ? 'bg-light-blue' : ''}`}>
-                            <input
-                              type="text"
-                              name="doctorEmail"
-                              value={primaryDoctorData.doctorEmail}
-                              required
-                              onChange={handlePrimaryDoctorInputChange}
-                              placeholder="xyz@gmail.com"
-                              className="w-full rounded-lg border-[1.5px] border-stroke bg-transparent py-2 px-5 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus-border-primary"/>
-                            </div>
-                          </div>
-    
-                          <div className="w-full xl:w-3/5">
-                            <label className="mb-2.5 block text-black dark:text-white">
-                              Gender
-                            </label>
-                            <div className={`relative ${primaryDoctorData.doctorGender ? 'bg-light-blue' : ''}`}>
-                            <select
-                                  name="doctorGender"
-                                  value={primaryDoctorData.doctorGender}
-                                  onChange={handlePrimaryDoctorInputChange}
-                                  required
-                                  className="w-full rounded-lg border-[1.5px] border-stroke bg-transparent py-2 px-5 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus-border-primary">
-                                  <option value="">Select Gender</option>                        
-                                  <option value="Male">Male</option>
-                                  <option value="Female">Female</option>
-                                </select>                        
-                              </div>
-                          </div>
-    
-                          <div className="w-full xl:w-3/5">
-                            <label className="mb-2.5 block text-black dark:text-white">
-                              Phone Number
-                            </label>
-                            <div className={`relative ${primaryDoctorData.doctorPhone ? 'bg-light-blue' : ''}`}>
-                            <input
-                              type="text"
-                              name="doctorPhone"
-                              value={primaryDoctorData.doctorPhone}
-                              required
-                              onChange={handlePrimaryDoctorInputChange}
-                              placeholder="+234 80123456"
-                              className="w-full rounded-lg border-[1.5px] border-stroke bg-transparent py-2 px-5 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus-border-primary"/>
-                            </div>
-                          </div>
-                        </div>
-    
-                        <div className="mb-4.5 flex flex-col gap-6 xl:flex-row">
-                                              
-                          <div className="w-full xl:w-3/5">
-                            <label className="mb-2.5 block text-black dark:text-white">
-                              Home Address
-                            </label>
-                            <div className={`relative ${primaryDoctorData.doctorHomeAddress ? 'bg-light-blue' : ''}`}>
-                            <input
-                              type="text"
-                              name="doctorHomeAddress"
-                              value={primaryDoctorData.doctorHomeAddress}
-                              required
-                              onChange={handlePrimaryDoctorInputChange}
-                              placeholder="Phoenix Court, 1st Avenue, Gwarinpa, Abuja"
-                              className="w-full rounded-lg border-[1.5px] border-stroke bg-transparent py-2 px-5 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus-border-primary"/>
-                            </div>
-                          </div>
-    
-                          <div className="w-full xl:w-3/5">
-                            <label className="mb-2.5 block text-black dark:text-white">
-                              City
-                            </label>
-                            <div className={`relative ${primaryDoctorData.doctorCity ? 'bg-light-blue' : ''}`}>
-                            <input
-                              type="text"
-                              name="doctorCity"
-                              value={primaryDoctorData.doctorCity}
-                              required
-                              onChange={handlePrimaryDoctorInputChange}
-                              placeholder="Lagos"
-                              className="w-full rounded-lg border-[1.5px] border-stroke bg-transparent py-2 px-5 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus-border-primary"/>
-                            </div>
-                          </div>
-    
-                          <div className="w-full xl:w-3/5">
-                            <label className="mb-2.5 block text-black dark:text-white">
-                              State
-                            </label>
-                            <div className={`relative ${primaryDoctorData.doctorState ? 'bg-light-blue' : ''}`}>
-                            <input
-                              type="text"
-                              name="doctorState"
-                              value={primaryDoctorData.doctorState}
-                              required
-                              onChange={handlePrimaryDoctorInputChange}
-                              placeholder="US-CA"
-                              className="w-full rounded-lg border-[1.5px] border-stroke bg-transparent py-2 px-5 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus-border-primary"/>
-                            </div>
-                          </div>
-    
-                        </div>
-    
-                        <div className="mb-4.5 flex flex-col gap-6 xl:flex-row">
-                                               
-                         
-                          <div className="w-ful l xl:w-2/5">
-                            <label className="mb-2.5 block text-black dark:text-white">
-                              Country
-                            </label>
-                            <div className={`relative ${primaryDoctorData.doctorCountry ? 'bg-light-blue' : ''}`}>
-                            <input
-                              type="text"
-                              name="doctorCountry"
-                              value={primaryDoctorData.doctorCountry}
-                              required
-                              onChange={handlePrimaryDoctorInputChange}
-                              placeholder="USA"
-                              className="w-full rounded-lg border-[1.5px] border-stroke bg-transparent py-2 px-5 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus-border-primary"/>
-                            </div>
-                          </div>
-                        </div>      
                       </div>
                         </form>
                           <button

@@ -6,23 +6,14 @@ import Header from '../../components/Header.tsx';
 import CoverOne from '../../images/entertainment.png';
 import { toast } from 'react-toastify'; 
 import 'react-toastify/dist/ReactToastify.css'; 
-
-
 const Profile = () => {
-
-  const createDoctor = useMutation(api.doctors.createDoctor);
-  const fetchDoctor = useQuery(api.doctors.getDoctors);
-  console.log(fetchDoctor);
-
+ 
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [usersDetails, setUsersDetails] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
   const [popupOpen, setPopupOpen] = useState(false);
   const [updateLoading, setUpdateLoading] = useState(false);
   const [userToDeleteId, setUserToDeleteId] = useState<number | null>(null);
   const [isDeleteConfirmationVisible, setDeleteConfirmationVisible] = useState(false);
-  const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
-  const [fetchDetailsLoading, setFetchDetailsLoading] = useState(false);
   const [popupOpenMap, setPopupOpenMap] = useState<{ [key: number]: boolean }>({});
   const [personalData, setPersonalData] = useState<{ name: string; yearsOfExperience: string; status: string; dateOfBirth: string; phone: string; hospital: string; specialty: string; identificationNumber: string; registrationNumber: string; gender: string; homeAddress: string; email: string; city: string; state: string; country: string; }>({
     name: '',
@@ -46,15 +37,16 @@ const Profile = () => {
   const popup = useRef<HTMLDivElement | null>(null); 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  useEffect(() => {
-   
-    // fetchDoctor();
-   
-  }, []);
+  const userId = localStorage.getItem("userId");
 
-  const togglePopup = (userId: string) => {
-    usersDetails.map((user) => { 
-      if (user.recordId === userId) {
+  const fetchDoctor = useQuery(api.doctors.getDoctor, { _id: userId });
+  const createDoctor = useMutation(api.doctors.createDoctor);
+  const updateDoctor = useMutation(api.doctors.updateDoctor);
+  const deleteDoctor = useMutation(api.doctors.deleteDoctor);
+
+  const togglePopup = (userId: any) => {
+    fetchDoctor?.map((user) => { 
+      if (user._id === userId) {
         setPersonalData({
           name: user.name,
           dateOfBirth: user.dateOfBirth,
@@ -103,7 +95,6 @@ const Profile = () => {
 
   };
 
-
   const handleAddProfile = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true); 
@@ -146,9 +137,9 @@ const Profile = () => {
     personaldata.append("status", personalData.status);
   
     try {
-      console.log(personalData);
-      await createDoctor(personalData);
-  
+      const docId = await createDoctor(personalData);
+      localStorage.setItem('userId', docId);
+
       setPersonalData({
         name: '',
         dateOfBirth: '',
@@ -166,9 +157,8 @@ const Profile = () => {
         country: '',
         phone: '',
       })
-      // fetchDoctor();
       setPopupOpen(false);
-      toast.success('Successfully created health record', {
+      toast.success('Successfully created doctor record', {
         position: toast.POSITION.TOP_RIGHT,
         autoClose: 3000, 
       });
@@ -176,17 +166,17 @@ const Profile = () => {
       setLoading(false);
   
     } catch (err) {
-        console.error('Error in handleCreateCause:', err);
-        toast.error('Error in handleAddProfile. Please try again later.', {
+        console.error('Error while adding doctor profile:', err);
+        toast.error('Error while adding doctor profile.', {
           position: toast.POSITION.TOP_RIGHT,
-          autoClose: 5000, // Adjust the duration as needed
+          autoClose: 5000,
         });
         setLoading(false);
       } 
   };
 
     
-const closePopup = (userId: string) => {
+const closePopup = (userId: any) => {
   setPopupOpenMap((prevMap) => ({
     ...prevMap,
     [userId]: false,
@@ -194,7 +184,7 @@ const closePopup = (userId: string) => {
 };
 
 
-const showDeleteConfirmation = (userId: string) => {
+const showDeleteConfirmation = (userId: any) => {
     setUserToDeleteId(userId);
     setDeleteConfirmationVisible(true);
   };
@@ -204,46 +194,17 @@ const showDeleteConfirmation = (userId: string) => {
     setDeleteConfirmationVisible(false);
   };
 
-  const updateHealthDetails = async (recordId, data) => {
+  const updateDoctorDetails = async (recordId : any, data: any) => {
     setUpdateLoading(true);
   try {
-    const response = await web5.dwn.records.query({
-      message: {
-        filter: {
-          recordId: recordId,
-        },
-      },
+    await updateDoctor({ id: recordId, ...data });
+    toast.success('Successfully updated your record', {
+      position: toast.POSITION.TOP_RIGHT,
+      autoClose: 3000, 
     });
-
-    if (response.records && response.records.length > 0) {
-      const record = response.records[0];
-      const updateResult = await record.update({data: data});
-      togglePopup(recordId)
-      if (updateResult.status.code === 202) {
-        toast.success('Health Details updated successfully.', {
-          position: toast.POSITION.TOP_RIGHT,
-          autoClose: 3000, 
-        });
-        setUsersDetails(prevHealthDetails => prevHealthDetails.map(message => message.recordId === recordId ? { ...message, ...data } : message));
-        setUpdateLoading(false);
-      } else {
-        console.error('Error updating message:', updateResult.status);
-        toast.error('Error updating campaign', {
-          position: toast.POSITION.TOP_RIGHT,
-          autoClose: 3000, 
-        });
-        setUpdateLoading(false);
-      }
-    } else {
-      console.error('No record found with the specified ID');
-      toast.error('No record found with the specified ID', {
-        position: toast.POSITION.TOP_RIGHT,
-        autoClose: 3000, 
-      });
-    }
   } catch (error) {
-    console.error('Error in updateHealthDetail:', error);
-    toast.error('Error in updateHealthDetail:', {
+    console.error('Error in updating record:', error);
+    toast.error('Error in updating record:', {
       position: toast.POSITION.TOP_RIGHT,
       autoClose: 3000, 
     });
@@ -251,52 +212,20 @@ const showDeleteConfirmation = (userId: string) => {
   }
 };
 
-const deleteHealthDetails = async (recordId) => {
+const deleteDoctorDetails = async (userId: any) => {
   try {
-    const response = await web5.dwn.records.query({
-      message: {
-        filter: {
-          recordId: recordId,
-        },
-      },
+    await deleteDoctor({ id: userId});
+    toast.success('Successfully deleted record', {
+      position: toast.POSITION.TOP_RIGHT,
+      autoClose: 3000, 
     });
-    // console.log(response);
-    if (response.records && response.records.length > 0) {
-      const record = response.records[0];
-      // console.log(record)
-      const deleteResult = await web5.dwn.records.delete({
-        message: {
-          recordId: recordId
-        },
-      });
-
-      const remoteResponse = await web5.dwn.records.delete({
-        from: myDid,
-        message: {
-          recordId: recordId,
-        },
-      });
-      // console.log(remoteResponse);
-      
-      if (deleteResult.status.code === 202) {
-        console.log('Health Details deleted successfully');
-        toast.success('Health Details deleted successfully', {
-          position: toast.POSITION.TOP_RIGHT,
-          autoClose: 3000, 
-        });
-        setUsersDetails(prevHealthDetails => prevHealthDetails.filter(message => message.recordId !== recordId));
-      } else {
-        console.error('Error deleting record:', deleteResult.status);
-        toast.error('Error deleting record:', {
-          position: toast.POSITION.TOP_RIGHT,
-          autoClose: 3000, 
-        });
-      }
-    } else {
-      // console.error('No record found with the specified ID');
-    }
+    hideDeleteConfirmation();
   } catch (error) {
-    console.error('Error in deleteHealthDetails:', error);
+    console.error('Error in deleting record:', error);
+    toast.error('Error in deleting record:', {
+      position: toast.POSITION.TOP_RIGHT,
+      autoClose: 3000, 
+    });
   }
 };
 
@@ -307,7 +236,7 @@ const deleteHealthDetails = async (recordId) => {
         <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
         <div className="relative flex flex-1 flex-col overflow-y-auto overflow-x-hidden">
         <Header sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
-        {fetchDoctor?.length > 0 ? (
+        {fetchDoctor != null && fetchDoctor?.length > 0 ? (
           <main>
             {fetchDoctor?.map((user, index) => (
             <div className="overflow-hidden rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
@@ -317,6 +246,7 @@ const deleteHealthDetails = async (recordId) => {
                 alt="profile cover"
                 className="h-full w-full rounded-tl-sm rounded-tr-sm object-cover object-center"
               />
+              
           </div>
           <div className="px-4 pb-6 lg:pb-8 xl:pb-11.5">
             <div className="relative z-30 mx-auto -mt-22 h-30 w-full max-w-30 rounded-full bg-white/20 p-1 backdrop-blur sm:h-44 sm:max-w-44 sm:p-3">
@@ -459,12 +389,12 @@ const deleteHealthDetails = async (recordId) => {
                     
                     <div className="relative">
                       <button
-                        onClick={() => togglePopup(user.recordId)}                      
+                        onClick={() => togglePopup(user._id)}                      
                         className="inline-flex items-center justify-center rounded-full bg-primary py-3 px-10 text-center font-medium text-white hover:bg-opacity-90 lg:px-8 xl:px-10"
                         >
                         Edit
                       </button>
-                        {popupOpenMap[user.recordId] && (
+                        {popupOpenMap[user._id] && (
                               <div
                                 ref={popup}
                                 className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50"
@@ -477,7 +407,7 @@ const deleteHealthDetails = async (recordId) => {
                                       <h2 className="text-xl font-semibold mb-4">Edit Your Details</h2>
                                       <div className="flex justify-end">
                                         <button
-                                          onClick={() => closePopup(user.recordId)}
+                                          onClick={() => closePopup(user._id)}
                                           className="text-blue-500 hover:text-gray-700 focus:outline-none"
                                         >
                                           <svg
@@ -769,7 +699,7 @@ const deleteHealthDetails = async (recordId) => {
                                     </form>
                                   <button
                                     type="button"
-                                    onClick={() => updateHealthDetails(user.recordId, personalData)}
+                                    onClick={() => updateDoctorDetails(user._id, personalData)}
                                     disabled={updateLoading}
                                     className={`mr-5 mb-5 inline-flex items-center justify-center gap-2.5 rounded-full bg-primary py-4 px-10 text-center font-medium text-white hover:bg-opacity-90 lg:px-8 xl:px-10 ${updateLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                                   >
@@ -789,7 +719,7 @@ const deleteHealthDetails = async (recordId) => {
 
                     <div className="relative">
                       <button
-                        onClick={() => showDeleteConfirmation(user.recordId)}
+                        onClick={() => showDeleteConfirmation(user._id)}
                         className="inline-flex items-center justify-center rounded-full bg-danger py-3 px-7 text-center font-medium text-white hover-bg-opacity-90 lg:px-8 xl:px-10"
                       >
                         Delete
@@ -808,7 +738,7 @@ const deleteHealthDetails = async (recordId) => {
                               <button
                                 onClick={() => {
                                   hideDeleteConfirmation();
-                                  deleteHealthDetails(user.recordId);
+                                  deleteDoctorDetails(user._id);
                                 }}
                                 className="rounded bg-danger py-2 px-3 text-white hover:bg-opacity-90"
                               >

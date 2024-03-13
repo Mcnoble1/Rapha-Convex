@@ -1,5 +1,7 @@
-import React, { useEffect, useContext, useRef, useState, ChangeEvent, FormEvent } from 'react';
+import React, { useEffect, useRef, useState, ChangeEvent, FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom'; 
+import { useQuery, useMutation } from "convex/react";
+import { api } from "../../../convex/_generated/api";
 import Header from '../../components/Header';
 import Sidebar from '../../components/Sidebar';
 import Breadcrumb from '../../components/Breadcrumb';
@@ -13,21 +15,11 @@ const Doctors: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // const { web5, myDid } = useContext( Web5Context);
-
-  const [doctorsDetails, setDoctorsDetails] = useState<Doctor[]>([]);
+  const [doctorsDetails, setDoctorsDetails] = useState<Id<"doctors"> | null>(null);
   const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
-  const [isDeleteConfirmationVisible, setDeleteConfirmationVisible] = useState(false);
-  const [doctorToDeleteId, setDoctorToDeleteId] = useState<number | null>(null);
   const [sortDropdownVisible, setSortDropdownVisible] = useState(false);
   const [filterDropdownVisible, setFilterDropdownVisible] = useState(false);
-  const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
   const [sortOption, setSortOption] = useState<string>(''); 
-  const [shareLoading, setShareLoading] = useState(false);
-  const [sharePopupOpen, setSharePopupOpen] = useState(false);
-  const [updateLoading, setUpdateLoading] = useState(false);
-  const [recipientDid, setRecipientDid] = useState("");
-  const [fetchDetailsLoading, setFetchDetailsLoading] = useState(false);
   const [filterOption, setFilterOption] = useState<string>(''); 
   const [search, setSearch] = useState('');
   const [popupOpenMap, setPopupOpenMap] = useState<{ [key: number]: boolean }>({});
@@ -50,129 +42,31 @@ const Doctors: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchHealthDetails();
+    // fetchDoctors();
   }, []);
 
-  const fetchHealthDetails = async () => {
-  setFetchDetailsLoading(true);
-  try {
-    const response = await web5.dwn.records.query({
-      from: adminDid,
-      message: {
-        filter: {
-            protocol: 'https://rapha.com/protocol',
-            protocolPath: 'doctorProfile',
-            // schema: 'https://did-box.com/schemas/healthDetails',
-        },
-      },
-    });
-    console.log('Health Details:', response);
 
-    if (response.status.code === 200) {
-      const healthDetails = await Promise.all(
-        response.records.map(async (record) => {
-          const data = await record.data.json();
-          console.log(data);
-          return {
-            ...data,
-            recordId: record.id,
-          };
-        })
-      );
-      setDoctorsDetails(healthDetails);
-      console.log(healthDetails);
-      toast.success('Successfully fetched doctor details', {
-        position: toast.POSITION.TOP_RIGHT,
-        autoClose: 3000,
-      });
-      setFetchDetailsLoading(false);
-    } else {
-      console.error('No doctor details found');
-      toast.error('Failed to fetch doctor details', {
-        position: toast.POSITION.TOP_RIGHT,
-        autoClose: 3000,
-      });
-    }
-    setFetchDetailsLoading(false);
-  } catch (err) {
-    console.error('Error in fetchDOctorDetails:', err);
-    toast.error('Error in fetchDOctorDetails. Please try again later.', {
-      position: toast.POSITION.TOP_RIGHT,
-      autoClose: 5000,
-    });
-    setFetchDetailsLoading(false);
-  };
-};
+  const doctors = useQuery(api.doctors.getDoctors);
+    // setDoctorsDetails(doctors);
+    // console.log('DoctorList:', doctors);
 
-
-const fetchPatientProfile = async (recipientDid) => {
-  try {
-    const response = await web5.dwn.records.query({
-      from: myDid,
-      message: {
-        filter: {
-            protocol: 'https://rapha.com/protocol',
-            protocolPath: 'patientProfile',
-        },
-      },
-    });
-    console.log(response);
-
-    if (response.status.code === 200) {
-      const patientDetails = await Promise.all(
-        response.records.map(async (record) => {
-          const data = await record.data.json();
-          // console.log(data);
-          return {
-            ...data,
-            recordId: record.id,
-          };
-        })
-      );
-      console.log(patientDetails);
-      
-      const recordId = patientDetails[0].recordId;
-        const res = await web5.dwn.records.query({
-          message: {
-            filter: {
-              recordId: recordId,
-            },
-          },
-        });
-        console.log(res);
-    
-        if (res.records && res.records.length > 0) {
-          const record = res.records[0];
-          const { status } = await record.send(recipientDid);
-          console.log('Send record status in shareProfile', status);
-          toast.success('Successfully shared health record', {
-            position: toast.POSITION.TOP_RIGHT,
-            autoClose: 3000,
-          });
-        } else {
-          console.error('No record found with the specified ID');
-          toast.error('Failed to share health record', {
-            position: toast.POSITION.TOP_RIGHT,
-            autoClose: 3000,
-          });
-        }
-      
-    } else {
-      console.error('No health details found');
-      toast.error('Failed to fetch health details', {
-        position: toast.POSITION.TOP_RIGHT,
-        autoClose: 3000,
-      });
-    }
-    setFetchDetailsLoading(false);
-  } catch (err) {
-    console.error('Error in fetchPatientProfile:', err);
-    toast.error('Error in fetchPatientProfile. Please try again later.', {
-      position: toast.POSITION.TOP_RIGHT,
-      autoClose: 5000,
-    });
-  };
-};
+//   const fetchDoctors = () => {
+//   try {
+//     const doctors = useQuery(api.doctors.getDoctors);
+//     setDoctorsDetails(doctors);
+//     console.log('DoctorList:', doctors);
+//     toast.success('Doctors fetched successfully.', {
+//       position: toast.POSITION.TOP_RIGHT,
+//       autoClose: 5000,
+//     });
+//   } catch (err) {
+//     console.error('Error in fetchDoctorDetails:', err);
+//     toast.error('Error in fetchDoctorDetails. Please try again later.', {
+//       position: toast.POSITION.TOP_RIGHT,
+//       autoClose: 5000,
+//     });
+//   };
+// };
   
 
   return (
@@ -203,7 +97,7 @@ const fetchPatientProfile = async (recipientDid) => {
               </div>
 
               <div className="flex flex-row gap-10 ">
-                    {doctorsDetails.map((doctor, index) => (
+                    {doctors?.map((doctor: any, index: any) => (
                       <div className=" lg:w-2/5 rounded-2xl bg-white px-5 shadow-default dark:border-strokedark dark:bg-boxdark ">
                         <div className="" key={index}>
                         <div className='flex flex-row mb-1 gap-20 p-5 w-full'>
@@ -262,7 +156,7 @@ const fetchPatientProfile = async (recipientDid) => {
                           <button
                             // onClick={() =>  togglePop(doctor.recordId)}  
                             onClick={() => {
-                              fetchPatientProfile(doctor.sender);
+                              // fetchPatientProfile(doctor.sender);
                               navigate(`/chat?did=${doctor.sender}&name=${doctor.name}`)}}                   
                             className="inline-flex items-center justify-center rounded-full bg-primary py-3 px-10 text-center font-medium text-white hover:bg-opacity-90 lg:px-8 xl:px-10"
                             >

@@ -4,27 +4,18 @@ import { useState, useRef, ChangeEvent, FormEvent, useEffect } from 'react';
 import Sidebar from '../../components/Sidebar.tsx';
 import Header from '../../components/Header.tsx';
 import CoverOne from '../../images/entertain.png';
-import userSix from '../../images/user/1.png';
 import { toast } from 'react-toastify'; 
 import 'react-toastify/dist/ReactToastify.css'; 
 const Profile = () => {
 
-  const createPatient = useMutation(api.patients.createPatient);
-  const fetchPatient = useQuery(api.patients.getPatient);
-  console.log(fetchPatient);
-
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  const [usersDetails, setUsersDetails] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
   const [popupOpen, setPopupOpen] = useState(false);
   const [updateLoading, setUpdateLoading] = useState(false);
   const [userToDeleteId, setUserToDeleteId] = useState<number | null>(null);
   const [isDeleteConfirmationVisible, setDeleteConfirmationVisible] = useState(false);
-  const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
-  const [fetchDetailsLoading, setFetchDetailsLoading] = useState(false);
   const [popupOpenMap, setPopupOpenMap] = useState<{ [key: number]: boolean }>({});
-  const [personalData, setPersonalData] = useState<{ name: string; dateOfBirth: string; phone: string; maritalStatus: string; identificationNumber: string; gender: string; homeAddress: string; email: string; city: string; state: string; country: string; }>({
+  const [personalData, setPersonalData] = useState<{ name: string; dateOfBirth: string; phone: any; maritalStatus: string; identificationNumber: string; gender: string; homeAddress: string; email: string; city: string; state: string; country: string; }>({
     name: '',
     dateOfBirth: '',
     maritalStatus: '',
@@ -35,10 +26,10 @@ const Profile = () => {
     city: '',
     state: '',
     country: '',
-    phone: '',
+    phone: 0,
   }); 
 
-  const [guardianData, setGuardianData] = useState<{ guardianName: string; guardianPhone: string; relationship: string; guardianGender: string; guardianHomeAddress: string; guardianEmail: string; guardianCity: string; guardianState: string; guardianCountry: string; }>({
+  const [guardianData, setGuardianData] = useState<{ guardianName: string; guardianPhone: any; relationship: string; guardianGender: string; guardianHomeAddress: string; guardianEmail: string; guardianCity: string; guardianState: string; guardianCountry: string; }>({
     guardianName: '',
     relationship: '',
     guardianGender: '',
@@ -47,7 +38,7 @@ const Profile = () => {
     guardianCity: '',
     guardianState: '',
     guardianCountry: '',
-    guardianPhone: '',
+    guardianPhone: 0,
   }); 
 
   const trigger = useRef<HTMLButtonElement | null>(null);
@@ -63,14 +54,16 @@ const Profile = () => {
     }));
   };
 
+  const userId = localStorage.getItem("userId");
 
-  useEffect(() => {
-    fetchHealthDetails();
-  }, []);
+  const createPatient = useMutation(api.patients.createPatient);
+  const fetchPatient = useQuery(api.patients.getPatient, { _id: userId });
+  const updatePatient = useMutation(api.patients.updatePatient);
+  const deletePatient = useMutation(api.patients.deletePatient);
 
-  const togglePopup = (userId: string) => {
-    usersDetails.map((user) => { 
-      if (user.recordId === userId) {
+  const togglePopup = (userId: any) => {
+    fetchPatient?.map((user) => { 
+      if (user._id === userId) {
         setPersonalData({
           name: user.name,
           dateOfBirth: user.dateOfBirth,
@@ -101,7 +94,7 @@ const Profile = () => {
     }));
   };
   
-const closePopup = (userId: string) => {
+const closePopup = (userId: any) => {
   setPopupOpenMap((prevMap) => ({
     ...prevMap,
     [userId]: false,
@@ -157,8 +150,8 @@ const handleAddProfile = async (e: FormEvent) => {
   guardiandata.append("guardianPhone", guardianData.guardianPhone);
 
   try {
-    console.log(personalData, guardianData);
-    await createPatient({...personalData, ...guardianData });
+    const patId = await createPatient({...personalData, ...guardianData });
+    localStorage.setItem("userId", patId);
 
     setPersonalData({
       name: '',
@@ -185,19 +178,18 @@ const handleAddProfile = async (e: FormEvent) => {
       guardianCountry: '',
       guardianPhone: '',
     })
-    // fetchPatient();
     setPopupOpen(false);
-    toast.success('Successfully created health record', {
+    toast.success('Successfully created patient record', {
       position: toast.POSITION.TOP_RIGHT,
       autoClose: 3000, 
     });
     setLoading(false);
 
   } catch (err) {
-      console.error('Error in handleCreateCause:', err);
-      toast.error('Error in handleAddProfile. Please try again later.', {
+      console.error('Error while adding patient profile:', err);
+      toast.error('Error while adding patient profile.', {
         position: toast.POSITION.TOP_RIGHT,
-        autoClose: 5000, // Adjust the duration as needed
+        autoClose: 5000, 
       });
       setLoading(false);
     } 
@@ -219,15 +211,9 @@ const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>)
     ...prevFormData,
     [name]: value,
   }));
-
-  const file = e.target.files?.[0];
-
-  if (file) {
-    setSelectedFileName(file.name);
-  } 
 };
 
-const showDeleteConfirmation = (userId: string) => {
+const showDeleteConfirmation = (userId: any) => {
     setUserToDeleteId(userId);
     setDeleteConfirmationVisible(true);
   };
@@ -237,46 +223,17 @@ const showDeleteConfirmation = (userId: string) => {
     setDeleteConfirmationVisible(false);
   };
 
-  const updateHealthDetails = async (recordId, data) => {
+  const updatePatientDetails = async (recordId : any, data: any) => {
     setUpdateLoading(true);
   try {
-    const response = await web5.dwn.records.query({
-      message: {
-        filter: {
-          recordId: recordId,
-        },
-      },
+    await updatePatient({ id: recordId, ...data });
+    toast.success('Successfully updated your record', {
+      position: toast.POSITION.TOP_RIGHT,
+      autoClose: 3000, 
     });
-
-    if (response.records && response.records.length > 0) {
-      const record = response.records[0];
-      const updateResult = await record.update({data: data});
-      togglePopup(recordId)
-      if (updateResult.status.code === 202) {
-        toast.success('Health Details updated successfully.', {
-          position: toast.POSITION.TOP_RIGHT,
-          autoClose: 3000, 
-        });
-        setUsersDetails(prevHealthDetails => prevHealthDetails.map(message => message.recordId === recordId ? { ...message, ...data } : message));
-        setUpdateLoading(false);
-      } else {
-        console.error('Error updating message:', updateResult.status);
-        toast.error('Error updating campaign', {
-          position: toast.POSITION.TOP_RIGHT,
-          autoClose: 3000, 
-        });
-        setUpdateLoading(false);
-      }
-    } else {
-      console.error('No record found with the specified ID');
-      toast.error('No record found with the specified ID', {
-        position: toast.POSITION.TOP_RIGHT,
-        autoClose: 3000, 
-      });
-    }
   } catch (error) {
-    console.error('Error in updateHealthDetail:', error);
-    toast.error('Error in updateHealthDetail:', {
+    console.error('Error in updating record:', error);
+    toast.error('Error in updating record:', {
       position: toast.POSITION.TOP_RIGHT,
       autoClose: 3000, 
     });
@@ -285,52 +242,20 @@ const showDeleteConfirmation = (userId: string) => {
 };
 
 
-const deleteHealthDetails = async (recordId) => {
+const deletePatientDetails = async (userId: any) => {
   try {
-    const response = await web5.dwn.records.query({
-      message: {
-        filter: {
-          recordId: recordId,
-        },
-      },
+    await deletePatient({ id: userId});
+    toast.success('Successfully deleted record', {
+      position: toast.POSITION.TOP_RIGHT,
+      autoClose: 3000, 
     });
-    console.log(response);
-    if (response.records && response.records.length > 0) {
-      const record = response.records[0];
-      console.log(record)
-      const deleteResult = await web5.dwn.records.delete({
-        message: {
-          recordId: recordId
-        },
-      });
-
-      const remoteResponse = await web5.dwn.records.delete({
-        from: myDid,
-        message: {
-          recordId: recordId,
-        },
-      });
-      console.log(remoteResponse);
-      
-      if (deleteResult.status.code === 202) {
-        console.log('Health Details deleted successfully');
-        toast.success('Health Details deleted successfully', {
-          position: toast.POSITION.TOP_RIGHT,
-          autoClose: 3000, 
-        });
-        setUsersDetails(prevHealthDetails => prevHealthDetails.filter(message => message.recordId !== recordId));
-      } else {
-        console.error('Error deleting record:', deleteResult.status);
-        toast.error('Error deleting record:', {
-          position: toast.POSITION.TOP_RIGHT,
-          autoClose: 3000, 
-        });
-      }
-    } else {
-      // console.error('No record found with the specified ID');
-    }
+    hideDeleteConfirmation();
   } catch (error) {
-    console.error('Error in deleteHealthDetails:', error);
+    console.error('Error in deletePatientDetails:', error);
+    toast.error('Error in deletePatientDetails:', {
+      position: toast.POSITION.TOP_RIGHT,
+      autoClose: 3000, 
+    });
   }
 };
 
@@ -341,7 +266,7 @@ const deleteHealthDetails = async (recordId) => {
         <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
         <div className="relative flex flex-1 flex-col overflow-y-auto overflow-x-hidden">
         <Header sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
-        {fetchPatient?.length > 0 ? (
+        {fetchPatient != null && fetchPatient?.length > 0 ? (
           <main>
           {fetchPatient?.map((user, index) => (
             <div key={index} className="overflow-hidden rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
@@ -356,7 +281,7 @@ const deleteHealthDetails = async (recordId) => {
           <div className="px-4 pb-6 lg:pb-8 xl:pb-11.5">
             <div className="relative z-30 mx-auto -mt-22 h-30 w-full max-w-30 rounded-full bg-white/20 p-1 backdrop-blur sm:h-44 sm:max-w-44 sm:p-3">
               <div className="relative drop-shadow-2">
-                <img src={imageURL || userSix} alt="profile" />
+                <img alt="profile" />
                 <label
                   htmlFor="profile"
                   className="absolute bottom-0 right-0 flex h-8.5 w-8.5 cursor-pointer items-center justify-center rounded-full bg-primary text-white hover:bg-opacity-90 sm:bottom-2 sm:right-2"
@@ -387,7 +312,6 @@ const deleteHealthDetails = async (recordId) => {
                     name="profile"
                     accept="image/*"
                     ref={fileInputRef}
-                    onChange={handleImageChange}
                     id="profile"
                     className="sr-only"
                   />
@@ -534,88 +458,17 @@ const deleteHealthDetails = async (recordId) => {
                 </div>
               </div>
 
-              <div className='flex flex-wrap  mb-10 p-5 w-full shadow-2xl rounded-lg'>
-                <div className='w-full mb-5 font-medium text-black text-xl'>Primary Doctor Information</div>
-                <div className='w-1/3 mb-5' >
-                  <span className="text-xl">Name</span>
-                  <h4 className="text-xl mt-1 break-words font-medium text-black dark:text-white">
-                    { user.doctorName }
-                  </h4>
-                </div>
-
-                <div className='w-1/3 mb-5' >
-                  <span className="text-xl">Gender</span>
-                  <h4 className="text-xl mt-1 break-words font-medium text-black dark:text-white">
-                    { user.doctorGender }
-                  </h4>
-                </div>
-
-                <div className='w-1/3 mb-5' >
-                <span className="text-xl">Hospital</span>
-                  <h4 className="text-xl mt-1 break-words font-medium text-black dark:text-white">
-                    { user.hospital }
-                  </h4>
-                </div>
-
-                <div className='w-1/3 mb-5' >
-                <span className="text-xl">Specialty</span>
-                  <h4 className="text-xl mt-1 break-words font-medium text-black dark:text-white">
-                    { user.specialty }
-                  </h4>
-                </div>
-
-                <div className='w-1/3 mb-5' >
-                <span className="text-xl">Email Address</span>
-                  <h4 className="text-xl mt-1 break-words font-medium text-black dark:text-white">
-                    { user.doctorEmail }
-                  </h4> 
-                </div>
-
-                <div className='w-1/3 mb-5' >
-                <span className="text-xl">Phone Number</span>
-                  <h4 className="text-xl mt-1 break-words font-medium text-black dark:text-white">
-                    { user.doctorPhone }
-                  </h4>
-                </div>
-
-                <div className='w-1/3 mb-5' >
-                <span className="text-xl">Home Address</span>
-                  <h4 className="text-xl mt-1 break-words font-medium text-black dark:text-white">
-                    { user.doctorHomeAddress }
-                  </h4>
-                </div>
-
-                <div className='w-1/3 mb-5' >
-                <span className="text-xl">City</span>
-                  <h4 className="text-xl mt-1 break-words font-medium text-black dark:text-white">
-                    { user.doctorCity }
-                  </h4>
-                </div>
-
-                <div className='w-1/3 mb-5' >
-                <span className="text-xl">State</span>
-                  <h4 className="text-xl mt-1 break-words font-medium text-black dark:text-white">
-                    { user.doctorState }
-                  </h4>
-                </div>
-
-                <div className='w-1/3 mb-5' >
-                <span className="text-xl">Country</span>
-                  <h4 className="text-xl mt-1 break-words font-medium text-black dark:text-white">
-                    { user.doctorCountry }
-                  </h4>
-                </div>
-              </div>
+              
 
                 <div className='w-full flex flex-row justify-evenly mb-5'>
                   <div className="relative">
                     <button
-                      onClick={() => togglePopup(user.recordId)}                      
+                      onClick={() => togglePopup(user._id)}                      
                       className="inline-flex items-center justify-center rounded-full bg-primary py-3 px-10 text-center font-medium text-white hover:bg-opacity-90 lg:px-8 xl:px-10"
                       >
                       Edit
                     </button>
-                      {popupOpenMap[user.recordId] && (
+                      {popupOpenMap[user._id] && (
                             <div
                               ref={popup}
                               className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50"
@@ -628,7 +481,7 @@ const deleteHealthDetails = async (recordId) => {
                                     <h2 className="text-xl font-semibold mb-4">Edit User Details</h2>
                                     <div className="flex justify-end">
                                       <button
-                                        onClick={() => closePopup(user.recordId)}
+                                        onClick={() => closePopup(user._id)}
                                         className="text-blue-500 hover:text-gray-700 focus:outline-none"
                                       >
                                         <svg
@@ -656,12 +509,12 @@ const deleteHealthDetails = async (recordId) => {
                                   <label className="mb-2.5 block text-black dark:text-white">
                                     Name
                                   </label>
-                                  <div className={`relative ${user.name ? 'bg-light-blue' : ''}`}>
+                                  <div className={`relative ${personalData.name ? 'bg-light-blue' : ''}`}>
                                   <input
                                     type="text"
                                     name="name"
                                     required
-                                    value={user.name}
+                                    value={personalData.name}
                                     onChange={handleInputChange}
                                     placeholder="John Doe"
                                     className="w-full rounded-lg border-[1.5px] border-stroke bg-transparent py-2 px-5 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus-border-primary"/>
@@ -672,12 +525,12 @@ const deleteHealthDetails = async (recordId) => {
                                   <label className="mb-2.5 block text-black dark:text-white">
                                     Date of Birth
                                   </label>
-                                  <div className={`relative ${user.dateOfBirth ? 'bg-light-blue' : ''}`}>
+                                  <div className={`relative ${personalData.dateOfBirth ? 'bg-light-blue' : ''}`}>
                                   <input
                                     type="date" 
                                     name="dateOfBirth"
                                     required
-                                    value={user.dateOfBirth}
+                                    value={personalData.dateOfBirth}
                                     onChange={handleInputChange}
                                     className="w-full rounded-lg border-[1.5px] border-stroke bg-transparent py-2 px-5 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus-border-primary"/>
                                   </div>
@@ -687,10 +540,10 @@ const deleteHealthDetails = async (recordId) => {
                                   <label className="mb-2.5 block text-black dark:text-white">
                                     Marital Status
                                   </label>
-                                  <div className={`relative ${user.maritalStatus ? 'bg-light-blue' : ''}`}>
+                                  <div className={`relative ${personalData.maritalStatus ? 'bg-light-blue' : ''}`}>
                                   <select
                                         name="maritalStatus"
-                                        value={user.maritalStatus}
+                                        value={personalData.maritalStatus}
                                         onChange={handleInputChange}
                                         required
                                         className="w-full rounded-lg border-[1.5px] border-stroke bg-transparent py-2 px-5 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus-border-primary">
@@ -708,11 +561,11 @@ const deleteHealthDetails = async (recordId) => {
                                   <label className="mb-2.5 block text-black dark:text-white">
                                     Identification Number
                                   </label>
-                                  <div className={`relative ${user.identificationNumber ? 'bg-light-blue' : ''}`}>
+                                  <div className={`relative ${personalData.identificationNumber ? 'bg-light-blue' : ''}`}>
                                   <input
                                     type="text"
                                     name="identificationNumber"
-                                    value={user.identificationNumber}
+                                    value={personalData.identificationNumber}
                                     required
                                     onChange={handleInputChange}
                                     placeholder="SSN123456"
@@ -724,10 +577,10 @@ const deleteHealthDetails = async (recordId) => {
                                   <label className="mb-2.5 block text-black dark:text-white">
                                     Gender
                                   </label>
-                                  <div className={`relative ${user.gender ? 'bg-light-blue' : ''}`}>
+                                  <div className={`relative ${personalData.gender ? 'bg-light-blue' : ''}`}>
                                   <select
                                         name="gender"
-                                        value={user.gender}
+                                        value={personalData.gender}
                                         onChange={handleInputChange}
                                         required
                                         className="w-full rounded-lg border-[1.5px] border-stroke bg-transparent py-2 px-5 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus-border-primary">
@@ -742,11 +595,11 @@ const deleteHealthDetails = async (recordId) => {
                                   <label className="mb-2.5 block text-black dark:text-white">
                                     Phone Number
                                   </label>
-                                  <div className={`relative ${user.phone ? 'bg-light-blue' : ''}`}>
+                                  <div className={`relative ${personalData.phone ? 'bg-light-blue' : ''}`}>
                                   <input
-                                    type="text"
+                                    type="number"
                                     name="phone"
-                                    value={user.phone}
+                                    value={personalData.phone}
                                     required
                                     onChange={handleInputChange}
                                     placeholder="+234 80123456"
@@ -761,11 +614,11 @@ const deleteHealthDetails = async (recordId) => {
                                   <label className="mb-2.5 block text-black dark:text-white">
                                     Email Address
                                   </label>
-                                  <div className={`relative ${user.email ? 'bg-light-blue' : ''}`}>
+                                  <div className={`relative ${personalData.email ? 'bg-light-blue' : ''}`}>
                                   <input
                                     type="text"
                                     name="email"
-                                    value={user.email}
+                                    value={personalData.email}
                                     required
                                     onChange={handleInputChange}
                                     placeholder="xyz@gmail.com"
@@ -777,11 +630,11 @@ const deleteHealthDetails = async (recordId) => {
                                   <label className="mb-2.5 block text-black dark:text-white">
                                     Home Address
                                   </label>
-                                  <div className={`relative ${user.homeAddress ? 'bg-light-blue' : ''}`}>
+                                  <div className={`relative ${personalData.homeAddress ? 'bg-light-blue' : ''}`}>
                                   <input
                                     type="text"
                                     name="homeAddress"
-                                    value={user.homeAddress}
+                                    value={personalData.homeAddress}
                                     required
                                     onChange={handleInputChange}
                                     placeholder="Phoenix Court, 1st Avenue, Gwarinpa, Abuja"
@@ -793,11 +646,11 @@ const deleteHealthDetails = async (recordId) => {
                                   <label className="mb-2.5 block text-black dark:text-white">
                                     City
                                   </label>
-                                  <div className={`relative ${user.city ? 'bg-light-blue' : ''}`}>
+                                  <div className={`relative ${personalData.city ? 'bg-light-blue' : ''}`}>
                                   <input
                                     type="text"
                                     name="city"
-                                    value={user.city}
+                                    value={personalData.city}
                                     required
                                     onChange={handleInputChange}
                                     placeholder="Lagos"
@@ -813,11 +666,11 @@ const deleteHealthDetails = async (recordId) => {
                                   <label className="mb-2.5 block text-black dark:text-white">
                                     State
                                   </label>
-                                  <div className={`relative ${user.state ? 'bg-light-blue' : ''}`}>
+                                  <div className={`relative ${personalData.state ? 'bg-light-blue' : ''}`}>
                                   <input
                                     type="text"
                                     name="state"
-                                    value={user.state}
+                                    value={personalData.state}
                                     required
                                     onChange={handleInputChange}
                                     placeholder="US-CA"
@@ -829,11 +682,11 @@ const deleteHealthDetails = async (recordId) => {
                                   <label className="mb-2.5 block text-black dark:text-white">
                                     Country
                                   </label>
-                                  <div className={`relative ${user.country ? 'bg-light-blue' : ''}`}>
+                                  <div className={`relative ${personalData.country ? 'bg-light-blue' : ''}`}>
                                   <input
                                     type="text"
                                     name="country"
-                                    value={user.country}
+                                    value={personalData.country}
                                     required
                                     onChange={handleInputChange}
                                     placeholder="USA"
@@ -850,12 +703,12 @@ const deleteHealthDetails = async (recordId) => {
                                         <label className="mb-2.5 block text-black dark:text-white">
                                           Name
                                         </label>
-                                        <div className={`relative ${user.guardianName ? 'bg-light-blue' : ''}`}>
+                                        <div className={`relative ${guardianData.guardianName ? 'bg-light-blue' : ''}`}>
                                         <input
                                           type="text"
                                           name="guardianName"
                                           required
-                                          value={user.guardianName}
+                                          value={guardianData.guardianName}
                                           onChange={handleGuardianInputChange}
                                           placeholder="John Doe"
                                           className="w-full rounded-lg border-[1.5px] border-stroke bg-transparent py-2 px-5 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus-border-primary"/>
@@ -866,10 +719,10 @@ const deleteHealthDetails = async (recordId) => {
                                         <label className="mb-2.5 block text-black dark:text-white">
                                           Gender
                                         </label>
-                                        <div className={`relative ${user.guardianGender ? 'bg-light-blue' : ''}`}>
+                                        <div className={`relative ${guardianData.guardianGender ? 'bg-light-blue' : ''}`}>
                                         <select
                                               name="guardianGender"
-                                              value={user.guardianGender}
+                                              value={guardianData.guardianGender}
                                               onChange={handleGuardianInputChange}
                                               required
                                               className="w-full rounded-lg border-[1.5px] border-stroke bg-transparent py-2 px-5 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus-border-primary">
@@ -884,11 +737,11 @@ const deleteHealthDetails = async (recordId) => {
                                         <label className="mb-2.5 block text-black dark:text-white">
                                           Relationship to Patient
                                         </label>
-                                        <div className={`relative ${user.relationship ? 'bg-light-blue' : ''}`}>
+                                        <div className={`relative ${guardianData.relationship ? 'bg-light-blue' : ''}`}>
                                         <input
                                           type="text"
                                           name="relationship"
-                                          value={user.relationship}
+                                          value={guardianData.relationship}
                                           required
                                           onChange={handleGuardianInputChange}
                                           placeholder="Partner"
@@ -903,11 +756,11 @@ const deleteHealthDetails = async (recordId) => {
                                         <label className="mb-2.5 block text-black dark:text-white">
                                           Phone Number
                                         </label>
-                                        <div className={`relative ${user.guardianPhone ? 'bg-light-blue' : ''}`}>
+                                        <div className={`relative ${guardianData.guardianPhone ? 'bg-light-blue' : ''}`}>
                                         <input
-                                          type="text"
+                                          type="number"
                                           name="guardianPhone"
-                                          value={user.guardianPhone}
+                                          value={guardianData.guardianPhone}
                                           required
                                           onChange={handleGuardianInputChange}
                                           placeholder="+234 80123456"
@@ -919,11 +772,11 @@ const deleteHealthDetails = async (recordId) => {
                                         <label className="mb-2.5 block text-black dark:text-white">
                                           Email Address
                                         </label>
-                                        <div className={`relative ${user.guardianEmail ? 'bg-light-blue' : ''}`}>
+                                        <div className={`relative ${guardianData.guardianEmail ? 'bg-light-blue' : ''}`}>
                                         <input
                                           type="text"
                                           name="guardianEmail"
-                                          value={user.guardianEmail}
+                                          value={guardianData.guardianEmail}
                                           required
                                           onChange={handleGuardianInputChange}
                                           placeholder="xyz@gmail.com"
@@ -935,11 +788,11 @@ const deleteHealthDetails = async (recordId) => {
                                         <label className="mb-2.5 block text-black dark:text-white">
                                           Home Address
                                         </label>
-                                        <div className={`relative ${user.guardianHomeAddress ? 'bg-light-blue' : ''}`}>
+                                        <div className={`relative ${guardianData.guardianHomeAddress ? 'bg-light-blue' : ''}`}>
                                         <input
                                           type="text"
                                           name="guardianHomeAddress"
-                                          value={user.guardianHomeAddress}
+                                          value={guardianData.guardianHomeAddress}
                                           required
                                           onChange={handleGuardianInputChange}
                                           placeholder="Phoenix Court, 1st Avenue"
@@ -954,11 +807,11 @@ const deleteHealthDetails = async (recordId) => {
                                         <label className="mb-2.5 block text-black dark:text-white">
                                           City
                                         </label>
-                                        <div className={`relative ${user.guardianCity ? 'bg-light-blue' : ''}`}>
+                                        <div className={`relative ${guardianData.guardianCity ? 'bg-light-blue' : ''}`}>
                                         <input
                                           type="text"
                                           name="guardianCity"
-                                          value={user.guardianCity}
+                                          value={guardianData.guardianCity}
                                           required
                                           onChange={handleGuardianInputChange}
                                           placeholder="Lagos"
@@ -970,11 +823,11 @@ const deleteHealthDetails = async (recordId) => {
                                         <label className="mb-2.5 block text-black dark:text-white">
                                           State
                                         </label>
-                                        <div className={`relative ${user.guardianState ? 'bg-light-blue' : ''}`}>
+                                        <div className={`relative ${guardianData.guardianState ? 'bg-light-blue' : ''}`}>
                                         <input
                                           type="text"
                                           name="guardianState"
-                                          value={user.guardianState}
+                                          value={guardianData.guardianState}
                                           required
                                           onChange={handleGuardianInputChange}
                                           placeholder="US-CA"
@@ -986,11 +839,11 @@ const deleteHealthDetails = async (recordId) => {
                                         <label className="mb-2.5 block text-black dark:text-white">
                                           Country
                                         </label>
-                                        <div className={`relative ${user.guardianCountry ? 'bg-light-blue' : ''}`}>
+                                        <div className={`relative ${guardianData.guardianCountry ? 'bg-light-blue' : ''}`}>
                                         <input
                                           type="text"
                                           name="guardianCountry"
-                                          value={user.guardianCountry}
+                                          value={guardianData.guardianCountry}
                                           required
                                           onChange={handleGuardianInputChange}
                                           placeholder="USA"
@@ -1002,7 +855,7 @@ const deleteHealthDetails = async (recordId) => {
                                   </form>
                                 <button
                                   type="button"
-                                  onClick={() => updateHealthDetails(user.recordId, personalData)}
+                                  onClick={() => updatePatientDetails(user._id, personalData, guardianData)}
                                   disabled={updateLoading}
                                   className={`mr-5 mb-5 inline-flex items-center justify-center gap-2.5 rounded-full bg-primary py-4 px-10 text-center font-medium text-white hover:bg-opacity-90 lg:px-8 xl:px-10 ${updateLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 >
@@ -1022,7 +875,7 @@ const deleteHealthDetails = async (recordId) => {
 
                   <div className="relative">
                     <button
-                      onClick={() => showDeleteConfirmation(user.recordId)}
+                      onClick={() => showDeleteConfirmation(user._id)}
                       className="inline-flex items-center justify-center rounded-full bg-danger py-3 px-7 text-center font-medium text-white hover-bg-opacity-90 lg:px-8 xl:px-10"
                     >
                       Delete
@@ -1041,7 +894,7 @@ const deleteHealthDetails = async (recordId) => {
                             <button
                               onClick={() => {
                                 hideDeleteConfirmation();
-                                deleteHealthDetails(user.recordId);
+                                deletePatientDetails(user._id);
                               }}
                               className="rounded bg-danger py-2 px-3 text-white hover:bg-opacity-90"
                             >

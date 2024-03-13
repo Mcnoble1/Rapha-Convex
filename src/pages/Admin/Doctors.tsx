@@ -1,10 +1,9 @@
-import React, { useEffect, useRef, useState, ChangeEvent, useContext, FormEvent } from 'react';
+import React, { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom'; 
 import Header from '../../components/Header';
 import Sidebar from '../../components/AdminSidebar';
 import Breadcrumb from '../../components/Breadcrumb';
 import AllDoctorsTable from '../../components/AllDoctorsTable';
-import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import '../signin.css';
 

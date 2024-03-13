@@ -2,8 +2,11 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
 export default defineSchema({
+    users: defineTable({
+        name: v.string(),
+        tokenIdentifier: v.string(),
+        }).index("by_token", ["tokenIdentifier"]),
   patients: defineTable({
-    // patientId: v.id("patients"),
     name: v.string(),
     dateOfBirth: v.string(),
     maritalStatus: v.string(),
@@ -14,7 +17,7 @@ export default defineSchema({
     city: v.string(),
     state: v.string(),
     country: v.string(),
-    phone: v.number(),
+    phone: v.string(),
     guardianName: v.string(),
     relationship: v.string(),
     guardianGender: v.string(),
@@ -23,10 +26,9 @@ export default defineSchema({
     guardianCity: v.string(),
     guardianState: v.string(),
     guardianCountry: v.string(),
-    guardianPhone: v.number(),
+    guardianPhone: v.string(),
   }),
   doctors: defineTable({
-    // doctorId: v.id("doctors"),
     name: v.string(),
     dateOfBirth: v.string(),
     hospital: v.string(),

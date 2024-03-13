@@ -1,4 +1,4 @@
-import { useState, useRef, ChangeEvent, FormEvent, useContext, useEffect } from 'react';
+import { useState, useRef, ChangeEvent, FormEvent, useEffect } from 'react';
 import { toast } from 'react-toastify'; 
 import 'react-toastify/dist/ReactToastify.css'; 
 import AllergyDetails from './AllergyDetails.tsx';
@@ -14,9 +14,6 @@ import PhysicalDetails from './PhysicalDetails.tsx';
 
 
 const HealthDetails = () => {
-
-  // const { web5, myDid } = useContext( Web5Context);
-
 
   const [usersDetails, setUsersDetails] = useState<User[]>([]);
   const [recipientDid, setRecipientDid] = useState("");
@@ -82,46 +79,7 @@ const closePopup = (userId: string) => {
 const fetchHealthDetails = async () => {
   setFetchDetailsLoading(true);
   try {
-    const response = await web5.dwn.records.query({
-      from: myDid,
-      message: {
-        filter: {
-            protocol: 'https://rapha.com/protocol',
-            protocolPath: 'patientProfile',
-            // schema: 'https://did-box.com/schemas/healthDetails',
-        },
-      },
-    });
-    console.log('Health Details:', response);
-
-    if (response.status.code === 200) {
-      const healthDetails = await Promise.all(
-        response.records.map(async (record) => {
-          const data = await record.data.json();
-          console.log(data);
-        localStorage.setItem('recordId', JSON.stringify(record.id));
-        localStorage.setItem('contextId', JSON.stringify(record.contextId));
-          return {
-            ...data,
-            recordId: record.id,
-          };
-        })
-      );
-      setUsersDetails(healthDetails);
-      
-      console.log(healthDetails);
-      toast.success('Successfully fetched health details', {
-        position: toast.POSITION.TOP_RIGHT,
-        autoClose: 3000,
-      });
-      setFetchDetailsLoading(false);
-    } else {
-      console.error('No health details found');
-      toast.error('Failed to fetch health details', {
-        position: toast.POSITION.TOP_RIGHT,
-        autoClose: 3000,
-      });
-    }
+    
     setFetchDetailsLoading(false);
   } catch (err) {
     console.error('Error in fetchHealthDetails:', err);
@@ -131,46 +89,6 @@ const fetchHealthDetails = async () => {
     });
     setFetchDetailsLoading(false);
   };
-};
-
-
-const shareHealthDetails = async (recordId: string) => {
-  setShareLoading(true);
-  try {
-    const response = await web5.dwn.records.query({
-      message: {
-        filter: {
-          recordId: recordId,
-        },
-      },
-    });
-
-    if (response.records && response.records.length > 0) {
-      const record = response.records[0];
-      const { status } = await record.send(recipientDid);
-      console.log('Send record status in shareProfile', status);
-      toast.success('Successfully shared health record', {
-        position: toast.POSITION.TOP_RIGHT,
-        autoClose: 3000,
-      });
-      setShareLoading(false);
-      setSharePopupOpen(false);
-    } else {
-      console.error('No record found with the specified ID');
-      toast.error('Failed to share health record', {
-        position: toast.POSITION.TOP_RIGHT,
-        autoClose: 3000,
-      });
-    }
-    setShareLoading(false);
-  } catch (err) {
-    console.error('Error in shareProfile:', err);
-    toast.error('Error in shareProfile. Please try again later.', {
-      position: toast.POSITION.TOP_RIGHT,
-      autoClose: 5000,
-    });
-    setShareLoading(false);
-  }
 };
 
 const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {

@@ -1,11 +1,12 @@
-import React, { useState, useRef, useEffect, useContext, ChangeEvent } from 'react';
+import React, { useState, useRef, useEffect, ChangeEvent } from 'react';
+import { useQuery, useMutation } from "convex/react";
+import { api } from "../../convex/_generated/api";
 import { toast } from 'react-toastify'; 
 import 'react-toastify/dist/ReactToastify.css'; 
 import DoctorImage from '../images/user/3.png';
 
 const DoctorsTable: React.FC = () => {
 
-  const { web5, myDid } = useContext(Web3Context);
   const [doctorsDetails, setDoctorsDetails] = useState<Doctor[]>([]);
   const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
   const [isRevokeConfirmationVisible, setRevokeConfirmationVisible] = useState(false);
@@ -62,61 +63,8 @@ setIssueVCOpenMap((prevMap) => ({
 }));
 };
 
-useEffect(() => {
-  if (web5 && myDid) {
-  fetchHealthDetails();
-  }
-} , [web5, myDid]);
 
-const fetchHealthDetails = async () => {
-  setFetchDetailsLoading(true);
-  try {
-    const response = await web5.dwn.records.query({
-      from: myDid,
-      message: {
-        filter: {
-            protocol: 'https://rapha.com/protocol',
-            protocolPath: 'doctorProfile',
-        },
-      },
-    });
-    console.log('Health Details:', response);
-
-    if (response.status.code === 200) {
-      const healthDetails = await Promise.all(
-        response.records.map(async (record) => {
-          const data = await record.data.json();
-          console.log(data);
-          return {
-            ...data,
-            recordId: record.id,
-          };
-        })
-      );
-      setDoctorsDetails(healthDetails);
-      console.log(healthDetails);
-      toast.success('Successfully fetched doctor details', {
-        position: toast.POSITION.TOP_RIGHT,
-        autoClose: 3000,
-      });
-      setFetchDetailsLoading(false);
-    } else {
-      console.error('No doctor details found');
-      toast.error('Failed to fetch doctor details', {
-        position: toast.POSITION.TOP_RIGHT,
-        autoClose: 3000,
-      });
-    }
-    setFetchDetailsLoading(false);
-  } catch (err) {
-    console.error('Error in fetchDOctorDetails:', err);
-    toast.error('Error in fetchDOctorDetails. Please try again later.', {
-      position: toast.POSITION.TOP_RIGHT,
-      autoClose: 5000,
-    });
-    setFetchDetailsLoading(false);
-  };
-};
+const doctors = useQuery(api.doctors.getDoctors);
 
 
 const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -145,62 +93,6 @@ const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>)
 
 // const doctorDid = doctorsDetails.map((doctor) => doctor.sender);
 // console.log(doctorDid);
-
-const issueVC = async (recordId) => {
-
-  const raphaDid = await DidKeyMethod.create();
-  const doctorDid = doctorsDetails.filter((doctor) => doctor.recordId === recordId)[0].sender;
-
-console.log(doctorDid);
-
-  const vc = await VerifiableCredential.create({
-    type: 'LicenseCredential',
-    issuer: raphaDid.did,
-    subject: doctorDid,
-    data: {
-        "specialty": vcData.specialty,
-        "licenseStatus": vcData.licenseStatus,
-        "hospital": vcData.hospital,
-    }
-  });
-
-console.log(vc);
-
-setVcData({
-  specialty: "",
-  hospital: "",
-  licenseStatus: "",
-});
-
-const signedLicenseJWT = await vc.sign({ did: raphaDid });
-
-console.log(signedLicenseJWT);
-
-const vcProtocol = profileProtocolDefinition;
-const { record } = await web5.dwn.records.create({
-  data: signedLicenseJWT,
-  message: {
-    protocol: vcProtocol.protocol,
-    protocolPath: 'licenseCredential',
-    schema: vcProtocol.types.licenseCredential.schema,
-    dataFormat: 'application/vc+jwt',
-    recipient: myDid,
-  },
-});
-
-console.log(record);
-
-const { status } = await record.send(doctorDid);
-console.log(status)
-
-console.log(doctorsDetails)
-doctorsDetails.filter((doctor) => doctor.recordId === recordId)[0].status = 'Verified';
-setDoctorsDetails(doctorsDetails);
-console.log(doctorsDetails)
-
-updateHealthDetails(recordId, doctorsDetails.filter((doctor) => doctor.recordId === recordId)[0]);
-
-};
 
 const showRevokeConfirmation = (doctorId: string) => {
     setDoctorToRevokeId(doctorId);
@@ -390,7 +282,7 @@ const deleteHealthDetails = async (recordId) => {
           </thead>
           <tbody>
             {/* Table body */}
-            {doctorsDetails.map((doctor, index) => (
+            {doctors?.map((doctor, index) => (
               <tr key={doctor.recordId} className={`border-b border-stroke dark:border-strokedark ${index === 0 ? 'rounded-t-sm' : ''}`}>
                 <td className="p-2.5 xl:p-5">
                   <div className="flex gap-3">

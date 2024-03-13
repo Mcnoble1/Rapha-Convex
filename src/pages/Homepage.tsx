@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { SignInButton } from "@clerk/clerk-react";
+import useStoreUserEffect from "../hooks/useStoreUserEffect.js";
 import heroImage from '../images/health.png';
 import one from '../images/onee.png';
 import two from '../images/two.png';
@@ -10,6 +11,9 @@ import five from '../images/five.png';
 import six from '../images/six.png';
 
 const Homepage = () => {
+
+  const userId = useStoreUserEffect();
+  console.log(userId);
 
   const [userType, setUserType] = useState(null);
 

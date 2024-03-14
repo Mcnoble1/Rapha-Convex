@@ -1,11 +1,10 @@
-import React, { useEffect, useRef, useState, ChangeEvent, FormEvent } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom'; 
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import Header from '../../components/Header';
 import Sidebar from '../../components/Sidebar';
 import Breadcrumb from '../../components/Breadcrumb';
-import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Image from '../../images/user/3.png';
 import '../signin.css';
@@ -15,8 +14,6 @@ const Doctors: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const [doctorsDetails, setDoctorsDetails] = useState<Id<"doctors"> | null>(null);
-  const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
   const [sortDropdownVisible, setSortDropdownVisible] = useState(false);
   const [filterDropdownVisible, setFilterDropdownVisible] = useState(false);
   const [sortOption, setSortOption] = useState<string>(''); 

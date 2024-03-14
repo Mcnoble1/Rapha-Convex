@@ -1,43 +1,39 @@
-import { useState, useRef, useContext, ChangeEvent, useEffect, FormEvent } from 'react';
+import { useState, useRef, ChangeEvent, FormEvent } from 'react';
 import { toast } from 'react-toastify'; 
+import { useQuery, useMutation } from "convex/react";
+import { api } from "../../convex/_generated/api";
 import 'react-toastify/dist/ReactToastify.css'; 
 import '../pages/signin.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus, faShare, faAngleDown } from '@fortawesome/free-solid-svg-icons';
-import HealthDetails from './HealthDetails';
 
-const MedicalHistoryDetails = (props) => {
+const MedicalHistoryDetails = () => {
   
-  // const { web5, myDid, profileProtocolDefinition, userType } = useContext( Web5Context);
-
   const [isCardOpen, setCardOpen] = useState(false);
   const [popupOpen, setPopupOpen] = useState(false);
-  const [recipientDid, setRecipientDid] = useState("");
+  const [loading, setLoading] = useState(false);
   const [sharePopupOpen, setSharePopupOpen] = useState(false);
-  const [shareLoading, setShareLoading] = useState(false);
-  const [fetchDetailsLoading, setFetchDetailsLoading] = useState(false);
   const [userToDeleteId, setUserToDeleteId] = useState<number | null>(null);
   const [isDeleteConfirmationVisible, setDeleteConfirmationVisible] = useState(false);
   const trigger = useRef<HTMLButtonElement | null>(null);
   const popup = useRef<HTMLDivElement | null>(null);
-  const [loading, setLoading] = useState(false);
   const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const [userDetails, setUserDetails] = useState<any>(null);
 
-  const [medicalHistoryData, setMedicalHistoryData] = useState<{ medication: string; dosage: string; frequency: string; prescribingDoctor: string; }>({
+  const [medicalHistoryData, setMedicalHistoryData] = useState<{ medication: string; medicalCondition: string; patientId: string; status: string; }>({
     medication: '',
-    dosage: '',
-    frequency: '',
-    prescribingDoctor: '',
+    patientId: '',
+    status: '',
+    medicalCondition: '',
   }); 
 
-  const parentId = JSON.parse(localStorage.getItem('recordId'));
-  const contextId = JSON.parse(localStorage.getItem('contextId'));
+  const userId = localStorage.getItem("userId");
+  const userType = localStorage.getItem("userType");
 
-  useEffect(() => {
-    fetchMedicalHistoryDetails();
-  }, []);
+  const getMedicalHistory = useQuery(api.healthRecord.getMedicalHistory, { patientId: userId });
+  const createMedicalHistory = useMutation(api.healthRecord.createMedicalHistory);
+  // const updateMedicalHistory = useMutation(api.healthRecord.updateMedicalHistory);
+  const deleteMedicalHistory = useMutation(api.healthRecord.deleteMedicalHistory);
 
   const showDeleteConfirmation = (userId: string) => {
     setUserToDeleteId(userId);
@@ -79,7 +75,6 @@ const MedicalHistoryDetails = (props) => {
 
   const handleAddProfile = async (e: FormEvent) => {
     e.preventDefault();
-    setLoading(true); 
   
     // const requiredFields = ['name', 'gender', 'phone', 'nationality', 'language', 'address'];
     // const emptyFields = requiredFields.filter((field) => !formData[field]);
@@ -103,43 +98,16 @@ const MedicalHistoryDetails = (props) => {
 
     const medicalHistorydata = new FormData();
     medicalHistorydata.append('medication', medicalHistoryData.medication);
-    medicalHistorydata.append('dosage', medicalHistoryData.dosage);
-    medicalHistorydata.append('frequency', medicalHistoryData.frequency);
-    medicalHistorydata.append('prescribingDoctor', medicalHistoryData.prescribingDoctor);
-
-
-    setLoading(false);
+    medicalHistorydata.append('medicalCondition', medicalHistoryData.medicalCondition);
+    medicalHistorydata.append('status', medicalHistoryData.status);
   
     try {
-      let record;
-      console.log(medicalHistoryData);
-      record = await writeProfileToDwn(medicalHistoryData);
-
-      const patientDid = props.patientDid;
-      console.log(patientDid);
-      if (record) {    
-        console.log(record);    
-        const DIDs = [myDid, patientDid];
-        await Promise.all(
-        DIDs.map(async (did) => {
-          const { status } = await record.send(did);
-          console.log('Send record status in medicalHistoryRecord', status)
-        })
-      );
-      } else {
-        toast.error('Failed to create medicalHistory record', {
-          position: toast.POSITION.TOP_RIGHT,
-          autoClose: 3000, 
-          });
-          setLoading(false);
-        throw new Error('Failed to create medicalHistory record');       
-      }
-  
+     await createMedicalHistory({ ...medicalHistoryData, patientId: userId })
       setMedicalHistoryData({
         medication: '',
-        dosage: '',
-        frequency: '',
-        prescribingDoctor: '',
+        medicalCondition: '',
+        status: '',
+        patientId: '',
       })
   
       setPopupOpen(false);
@@ -147,9 +115,6 @@ const MedicalHistoryDetails = (props) => {
         position: toast.POSITION.TOP_RIGHT,
         autoClose: 3000, 
       });
-  
-      setLoading(false);
-      fetchMedicalHistoryDetails();
 
     } catch (err) {
         console.error('Error in handleCreateCause:', err);
@@ -157,181 +122,30 @@ const MedicalHistoryDetails = (props) => {
           position: toast.POSITION.TOP_RIGHT,
           autoClose: 5000, // Adjust the duration as needed
         });
-        setLoading(false);
       } 
   };
 
-  const writeProfileToDwn = async (medicalHistoryDetails: any) => {
-    
-    const currentDate = new Date().toLocaleDateString();
-    const currentTime = new Date().toLocaleTimeString();
-    const timestamp = `${currentDate} ${currentTime}`;
-
+  const deleteMedicalHistoryDetails = async (userId: any) => {
     try {
-      const medicalHistoryProtocol = profileProtocolDefinition;
-      const { record, status } = await web5.dwn.records.write({
-        data: {...medicalHistoryDetails, timestamp: timestamp},
-        message: {
-          protocol: medicalHistoryProtocol.protocol,
-          protocolPath: 'patientProfile/medicalHistoryRecord',
-          schema: medicalHistoryProtocol.types.medicalHistoryRecord.schema,
-          recipient: myDid,
-          parentId: parentId,
-          contextId: contextId,
-        },
-      });
-
-      if (status === 200) {
-        return { ...medicalHistoryDetails, recordId: record.id}
-      } 
-      console.log('Successfully wrote medicalHistory details to DWN:', record);
-      toast.success('MedicalHistory Details written to DWN', {
+      await deleteMedicalHistory({ id: userId});
+      toast.success('Successfully deleted record', {
         position: toast.POSITION.TOP_RIGHT,
         autoClose: 3000, 
       });
-      return record;
-    } catch (err) {
-      console.error('Failed to write medicalHistory details to DWN:', err);
-      toast.error('Failed to write medicalHistory details to DWN. Please try again later.', {
-        position: toast.POSITION.TOP_RIGHT,
-        autoClose: 3000,
-      });
-    }
-   }; 
-
-   const fetchMedicalHistoryDetails = async () => {
-    setFetchDetailsLoading(true);
-    try {
-      const response = await web5.dwn.records.query({
-        from: myDid,
-        message: {
-          filter: {
-              protocol: 'https://rapha.com/protocol',
-              protocolPath: 'patientProfile/medicalHistoryRecord',
-          },
-        },
-      });
-      console.log('MedicalHistory Details:', response);
-  
-      if (response.status.code === 200) {
-        const medicalHistoryDetails = await Promise.all(
-          response.records.map(async (record) => {
-            const data = await record.data.json();
-            console.log(data);
-            return {
-              ...data,
-              recordId: record.id,
-            };
-          })
-        );
-        setUserDetails(medicalHistoryDetails);
-        console.log(medicalHistoryDetails);
-        setFetchDetailsLoading(false);
-      } else {
-        console.error('No medicalHistory details found');
-        toast.error('Failed to fetch medicalHistory details', {
-          position: toast.POSITION.TOP_RIGHT,
-          autoClose: 3000,
-        });
-      }
-      setFetchDetailsLoading(false);
-    } catch (err) {
-      console.error('Error in fetchMedicalHistoryDetails:', err);
-      toast.error('Error in fetchMedicalHistoryDetails. Please try again later.', {
-        position: toast.POSITION.TOP_RIGHT,
-        autoClose: 5000,
-      });
-      setFetchDetailsLoading(false);
-    };
-  };
-
-   const shareMedicalHistoryDetails = async (recordId: string) => {
-    setShareLoading(true);
-    try {
-      const response = await web5.dwn.records.query({
-        message: {
-          filter: {
-            recordId: recordId,
-          },
-        },
-      });
-  
-      if (response.records && response.records.length > 0) {
-        const record = response.records[0];
-        const { status } = await record.send(recipientDid);
-        console.log('Send record status in shareProfile', status);
-        toast.success('Successfully shared medicalHistory record', {
-          position: toast.POSITION.TOP_RIGHT,
-          autoClose: 3000,
-        });
-        setShareLoading(false);
-        setSharePopupOpen(false);
-      } else {
-        console.error('No record found with the specified ID');
-        toast.error('Failed to share medicalHistory record', {
-          position: toast.POSITION.TOP_RIGHT,
-          autoClose: 3000,
-        });
-      }
-      setShareLoading(false);
-    } catch (err) {
-      console.error('Error in shareProfile:', err);
-      toast.error('Error in shareProfile. Please try again later.', {
-        position: toast.POSITION.TOP_RIGHT,
-        autoClose: 5000,
-      });
-      setShareLoading(false);
-    }
-  };
-
-  const deleteMedicalHistoryDetails = async (recordId) => {
-    try {
-      const response = await web5.dwn.records.query({
-        message: {
-          filter: {
-            recordId: recordId,
-          },
-        },
-      });
-      console.log(response);
-      if (response.records && response.records.length > 0) {
-        const record = response.records[0];
-        console.log(record)
-        const deleteResult = await web5.dwn.records.delete({
-          message: {
-            recordId: recordId
-          },
-        });
-  
-        const remoteResponse = await web5.dwn.records.delete({
-          from: myDid,
-          message: {
-            recordId: recordId,
-          },
-        });
-        console.log(remoteResponse);
-        
-        if (deleteResult.status.code === 202) {
-          console.log('MedicalHistory Details deleted successfully');
-          toast.success('MedicalHistory Details deleted successfully', {
-            position: toast.POSITION.TOP_RIGHT,
-            autoClose: 3000, 
-          });
-          setUserDetails(prevMedicalHistoryDetails => prevMedicalHistoryDetails.filter(message => message.recordId !== recordId));
-        } else {
-          console.error('Error deleting record:', deleteResult.status);
-          toast.error('Error deleting record:', {
-            position: toast.POSITION.TOP_RIGHT,
-            autoClose: 3000, 
-          });
-        }
-      } else {
-        // console.error('No record found with the specified ID');
-      }
+      hideDeleteConfirmation();
     } catch (error) {
-      console.error('Error in deleteMedicalHistoryDetails:', error);
+      console.error('Error in deleting record:', error);
+      toast.error('Error in deleting record:', {
+        position: toast.POSITION.TOP_RIGHT,
+        autoClose: 3000, 
+      });
     }
   };
+
+  const formatDateTime = (date: any) => {
+    const d = new Date(date);
+    return d.toLocaleString();
+  }
 
    return (
     <>
@@ -340,7 +154,7 @@ const MedicalHistoryDetails = (props) => {
           MedicalHistory Information
         </div>
         <div className="flex flex-row mb-5 items-center gap-10 justify-end">
-        {userType === 'doctor' && (
+        {userType === 'patient' && (
             <> 
           <button
             ref={trigger}
@@ -385,12 +199,12 @@ const MedicalHistoryDetails = (props) => {
                         <label className="mb-2.5 block text-black dark:text-white">
                           Medication
                         </label>
-                        <div className={`relative ${userDetails?.medication ? 'bg-light-blue' : ''}`}>
+                        <div className={`relative ${medicalHistoryData.medication ? 'bg-light-blue' : ''}`}>
                         <input
                           type="text"
                           name="medication"
                           required
-                          value={userDetails?.medication}
+                          value={medicalHistoryData.medication}
                           onChange={handleInputChange}
                           placeholder="John Doe"
                           className="w-full rounded-lg border-[1.5px] border-stroke bg-transparent py-2 px-5 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus-border-primary"/>
@@ -399,14 +213,14 @@ const MedicalHistoryDetails = (props) => {
 
                       <div className="w-full xl:w-1/2">
                         <label className="mb-2.5 block text-black dark:text-white">
-                          Dosage
+                          Medical Condition
                         </label>
-                        <div className={`relative ${userDetails?.dosage ? 'bg-light-blue' : ''}`}>
+                        <div className={`relative ${medicalHistoryData.medicalCondition ? 'bg-light-blue' : ''}`}>
                         <input
                            type="text" 
-                          name="dosage"
+                          name="medicalCondition"
                           required
-                          value={userDetails?.dosage}
+                          value={medicalHistoryData.medicalCondition}
                           placeholder='Severity'
                           onChange={handleInputChange}
                           className="w-full rounded-lg border-[1.5px] border-stroke bg-transparent py-2 px-5 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus-border-primary"/>
@@ -415,39 +229,20 @@ const MedicalHistoryDetails = (props) => {
 
                       <div className="w-full xl:w-3/5">
                         <label className="mb-2.5 block text-black dark:text-white">
-                          Frequency
+                          Status
                         </label>
-                        <div className={`relative ${userDetails?.frequency ? 'bg-light-blue' : ''}`}>
+                        <div className={`relative ${medicalHistoryData.status ? 'bg-light-blue' : ''}`}>
                         <input
                             type='text'
-                              name="frequency"
-                              value={userDetails?.frequency}
+                              name="status"
+                              value={medicalHistoryData.status}
                               onChange={handleInputChange}
                               required
                               placeholder='Reaction'
                               className="w-full rounded-lg border-[1.5px] border-stroke bg-transparent py-2 px-5 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus-border-primary"/>
                           </div>
                       </div>
-                    </div>
-
-                    <div className="mb-4.5 flex flex-col gap-6 xl:flex-row">
-                                           
-                      <div className="w-full xl:w-2/5">
-                        <label className="mb-2.5 block text-black dark:text-white">
-                          Prescribing Doctor
-                        </label>
-                        <div className={`relative ${userDetails?.prescribingDoctor ? 'bg-light-blue' : ''}`}>
-                        <input
-                          type="text"
-                          name="prescribingDoctor"
-                          value={userDetails?.prescribingDoctor}
-                          required
-                          onChange={handleInputChange}
-                          placeholder="Dr John"
-                          className="w-full rounded-lg border-[1.5px] border-stroke bg-transparent py-2 px-5 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus-border-primary"/>
-                        </div>
-                      </div>
-                    </div>                     
+                    </div>                    
                     </div>
 
                     </form>
@@ -473,98 +268,6 @@ const MedicalHistoryDetails = (props) => {
           )}
 
           <button
-           ref={trigger}
-           onClick={() => setSharePopupOpen(!sharePopupOpen)}
-            className=""
-          >
-            <FontAwesomeIcon icon={faShare} />
-          </button>
-          {sharePopupOpen && (
-                <div
-                  ref={popup}
-                  className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50"
-                >
-                  <div
-                      className="lg:mt-15 lg:w-1/2 rounded-lg bg-white dark:bg-dark pt-3 px-4 shadow-md"
-                      style={{ maxHeight: 'calc(100vh - 200px)', overflowY: 'scroll' }}
-                    >      
-                    <div
-                      className="w-full wow fadeInUp mb-12 rounded-lg bg-primary/[5%] py-11 px-8 dark:bg-dark sm:p-[55px] lg:mb-5 lg:px-8 xl:p-[55px]"
-                      data-wow-delay=".15s
-                      ">        
-                        <div className="flex flex-row justify-between ">
-                          <h2 className="text-xl font-semibold mb-4">Share MedicalHistory Details</h2>
-                          <div className="flex justify-end">
-                            <button
-                              onClick={() => setSharePopupOpen(false)}
-                              className="text-blue-500 hover:text-gray-700 focus:outline-none"
-                            >
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                className="h-5 w-5 fill-current bg-primary rounded-full p-1 hover:bg-opacity-90"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="white"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth="2"
-                                  d="M6 18L18 6M6 6l12 12"
-                                />
-                              </svg>
-                            </button>
-                          </div>  
-                        </div>
-                      <form>
-                    <div className="-mx-4 flex flex-wrap">
-                      <div className="w-full px-4">
-                        <div className="mb-8">
-                          <label
-                            htmlFor="recipientDid"
-                            className="mb-3 block text-sm font-medium text-dark dark:text-white"
-                          >
-                            Recipient DID
-                          </label>
-                          <div>
-                          <input
-                            type="text"
-                            name="recipientDid"
-                            value={recipientDid}
-                            onChange={(e) => setRecipientDid(e.target.value)}
-                            placeholder="Paste Recipient DID"
-                            required
-                            className="w-full rounded-lg border border-transparent py-3 px-6 text-base text-body-color placeholder-body-color shadow-one outline-none focus:border-primary focus-visible:shadow-none dark:bg-[#242B51] dark:shadow-signUp"
-                          />
-                          </div>
-                        </div>
-                      </div>
-                      
-                      
-                      <div className="w-full px-4">
-                        <button 
-                          type="button"
-                          onClick={() => shareMedicalHistoryDetails(userDetails.recordId)}
-                          disabled={shareLoading}
-                          className="rounded-lg bg-primary py-4 px-9 text-base font-medium text-white transition duration-300 ease-in-out hover:bg-opacity-80 hover:shadow-signUp">
-                          {shareLoading ? (
-                            <div className="flex items-center">
-                              <div className="spinner"></div>
-                              <span className="pl-1">Sharing...</span>
-                            </div>
-                          ) : (
-                            <>Share</>
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                      </form>
-                      </div>
-                    </div>
-                </div>
-              )}
-
-          <button
             onClick={() => setCardOpen(!isCardOpen)}
             className=""
           >
@@ -575,9 +278,9 @@ const MedicalHistoryDetails = (props) => {
 
       {isCardOpen && (
         <>
-            {userDetails?.length > 0 ? (
+            {getMedicalHistory != null && getMedicalHistory?.length > 0 ? (
             <>
-            {userDetails?.map((user, index) => (
+            {getMedicalHistory?.map((user, index) => (
           <div className="flex w-full" key={index}>
             <div className='w-1/3 mb-5'>
               <span className="text-xl">Medication</span>
@@ -587,37 +290,30 @@ const MedicalHistoryDetails = (props) => {
             </div>
 
             <div className='w-1/3 mb-5'>
-              <span className="text-xl">Dosage</span>
+              <span className="text-xl">Medical Condition</span>
               <h4 className="text-xl mt-1 font-medium text-black dark:text-white">
-                {user.dosage}
+                {user.medicalCondition}
               </h4>
             </div>
 
             <div className='w-1/3 mb-5'>
-              <span className="text-xl">Frequency</span>
+              <span className="text-xl">Status</span>
               <h4 className="text-xl mt-1 font-medium text-black dark:text-white">
-                {user.frequency}
-              </h4>
-            </div>
-
-            <div className='w-1/3 mb-5'>
-              <span className="text-xl">Prescribing Doctor</span>
-              <h4 className="text-xl mt-1 font-medium text-black dark:text-white">
-                {user.prescribingDoctor}
+                {user.status}
               </h4>
             </div>
 
             <div className='w-1/3 mb-5'>
               <span className="text-xl">Timestamp</span>
               <h4 className="text-xl mt-1 font-medium text-black dark:text-white">
-                {user.timestamp}
+                {formatDateTime(user._creationTime)}
               </h4>
             </div>
 
-            {userType === 'doctor' && (
+            {userType === 'patient' && (
             <>
             <button
-                onClick={() => showDeleteConfirmation(user.recordId)}
+                onClick={() => showDeleteConfirmation(user._id)}
                 className="rounded-lg bg-danger py-0 px-3 h-10 text-center font-medium text-white hover-bg-opacity-90"
               >
                 Delete
@@ -636,7 +332,7 @@ const MedicalHistoryDetails = (props) => {
                       <button
                         onClick={() => {
                           hideDeleteConfirmation();
-                          deleteMedicalHistoryDetails(user.recordId);
+                          deleteMedicalHistoryDetails(user._id);
                         }}
                         className="rounded bg-danger py-2 px-3 text-white hover:bg-opacity-90"
                       >

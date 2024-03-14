@@ -1,21 +1,17 @@
-import { useState, useRef, useContext, ChangeEvent, useEffect, FormEvent } from 'react';
+import { useState, useRef, ChangeEvent, FormEvent } from 'react';
 import { toast } from 'react-toastify'; 
+import { useQuery, useMutation } from "convex/react";
+import { api } from "../../convex/_generated/api";
 import 'react-toastify/dist/ReactToastify.css'; 
 import '../pages/signin.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus, faShare, faAngleDown } from '@fortawesome/free-solid-svg-icons';
-import HealthDetails from './HealthDetails';
 
-const CardiologyDetails = (props) => {
-  
-  // const { web5, myDid, profileProtocolDefinition, userType } = useContext( Web5Context);
+const CardiologyDetails = () => {
 
   const [isCardOpen, setCardOpen] = useState(false);
   const [popupOpen, setPopupOpen] = useState(false);
-  const [recipientDid, setRecipientDid] = useState("");
   const [sharePopupOpen, setSharePopupOpen] = useState(false);
-  const [shareLoading, setShareLoading] = useState(false);
-  const [fetchDetailsLoading, setFetchDetailsLoading] = useState(false);
   const [userToDeleteId, setUserToDeleteId] = useState<number | null>(null);
   const [isDeleteConfirmationVisible, setDeleteConfirmationVisible] = useState(false);
   const trigger = useRef<HTMLButtonElement | null>(null);
@@ -23,21 +19,24 @@ const CardiologyDetails = (props) => {
   const [loading, setLoading] = useState(false);
   const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const [userDetails, setUserDetails] = useState<any>(null);
 
-  const [cardiologyData, setCardiologyData] = useState<{ heartCondition: string; testPerformed: string; testResult: string; treatment: string; }>({
+  const [cardiologyData, setCardiologyData] = useState<{ hospital: string, heartCondition: string; patientId: string, testPerformed: string; testResult: string; treatment: string; }>({
     heartCondition: '',
     testPerformed: '',
     testResult: '',
     treatment: '',
+    patientId: '',
+    hospital: '',
   }); 
 
-  const parentId = JSON.parse(localStorage.getItem('recordId'));
-  const contextId = JSON.parse(localStorage.getItem('contextId'));
+  const userId = localStorage.getItem("userId");
+  const userType = localStorage.getItem("userType");
 
-  useEffect(() => {
-    fetchCardiologyDetails();
-  }, []);
+  const getCardiology = useQuery(api.healthRecord.getCardiologyDetails, { patientId: userId });
+  const createCardiology = useMutation(api.healthRecord.createCardiologyDetails);
+  // const updateCardiology = useMutation(api.healthRecord.updateCardiologyDetails);
+  const deleteCardiology = useMutation(api.healthRecord.deleteCardiologyDetails);
+
 
   const showDeleteConfirmation = (userId: string) => {
     setUserToDeleteId(userId);
@@ -111,36 +110,15 @@ const CardiologyDetails = (props) => {
     setLoading(false);
   
     try {
-      let record;
-      console.log(cardiologyData);
-      record = await writeProfileToDwn(cardiologyData);
-
-      const patientDid = props.patientDid;
-      console.log(patientDid);
-
-      if (record) {    
-        console.log(record);    
-        const DIDs = [myDid, patientDid];
-        await Promise.all(
-        DIDs.map(async (did) => {
-          const { status } = await record.send(did);
-          console.log('Send record status in allergyRecord', status)
-        })
-      );
-      }  else {
-        toast.error('Failed to create cardiology record', {
-          position: toast.POSITION.TOP_RIGHT,
-          autoClose: 3000, 
-          });
-          setLoading(false);
-        throw new Error('Failed to create cardiology record');       
-      }
+      await createCardiology({ ...cardiologyData, patientId: userId })
   
       setCardiologyData({
         heartCondition: '',
         testPerformed: '',
         testResult: '',
         treatment: '',
+        patientId: '',
+        hospital: '',
       })
   
       setPopupOpen(false);
@@ -150,188 +128,37 @@ const CardiologyDetails = (props) => {
       });
   
       setLoading(false);
-      fetchCardiologyDetails();
     } catch (err) {
         console.error('Error in handleCreateCause:', err);
         toast.error('Error in handleAddProfile. Please try again later.', {
           position: toast.POSITION.TOP_RIGHT,
-          autoClose: 5000, // Adjust the duration as needed
+          autoClose: 3000,
         });
         setLoading(false);
       } 
   };
 
-  const writeProfileToDwn = async (cardiologyDetails: any) => {
-    
-    const currentDate = new Date().toLocaleDateString();
-    const currentTime = new Date().toLocaleTimeString();
-    const timestamp = `${currentDate} ${currentTime}`;
-
+  const deleteCardiologyDetails = async (userId: any) => {
     try {
-      const cardiologyProtocol = profileProtocolDefinition;
-      const { record, status } = await web5.dwn.records.write({
-        data: {...cardiologyDetails, timestamp: timestamp},
-        message: {
-          protocol: cardiologyProtocol.protocol,
-          protocolPath: 'patientProfile/cardiologyRecord',
-          schema: cardiologyProtocol.types.cardiologyRecord.schema,
-          recipient: myDid,
-          parentId: parentId,
-          contextId: contextId,
-        },
-      });
-
-      if (status === 200) {
-        return { ...cardiologyDetails, recordId: record.id}
-      } 
-      console.log('Successfully wrote cardiology details to DWN:', record);
-      toast.success('Cardiology Details written to DWN', {
+      await deleteCardiology({ id: userId});
+      toast.success('Successfully deleted record', {
         position: toast.POSITION.TOP_RIGHT,
         autoClose: 3000, 
       });
-      return record;
-    } catch (err) {
-      console.error('Failed to write cardiology details to DWN:', err);
-      toast.error('Failed to write cardiology details to DWN. Please try again later.', {
-        position: toast.POSITION.TOP_RIGHT,
-        autoClose: 3000,
-      });
-    }
-   }; 
-
-   const fetchCardiologyDetails = async () => {
-    setFetchDetailsLoading(true);
-    try {
-      const response = await web5.dwn.records.query({
-        from: myDid,
-        message: {
-          filter: {
-              protocol: 'https://rapha.com/protocol',
-              protocolPath: 'patientProfile/cardiologyRecord',
-          },
-        },
-      });
-      console.log('Cardiology Details:', response);
-  
-      if (response.status.code === 200) {
-        const cardiologyDetails = await Promise.all(
-          response.records.map(async (record) => {
-            const data = await record.data.json();
-            console.log(data);
-            return {
-              ...data,
-              recordId: record.id,
-            };
-          })
-        );
-        setUserDetails(cardiologyDetails);
-        console.log(cardiologyDetails)
-        setFetchDetailsLoading(false);
-      } else {
-        console.error('No cardiology details found');
-        toast.error('Failed to fetch cardiology details', {
-          position: toast.POSITION.TOP_RIGHT,
-          autoClose: 3000,
-        });
-      }
-      setFetchDetailsLoading(false);
-    } catch (err) {
-      console.error('Error in fetchCardiologyDetails:', err);
-      toast.error('Error in fetchCardiologyDetails. Please try again later.', {
-        position: toast.POSITION.TOP_RIGHT,
-        autoClose: 5000,
-      });
-      setFetchDetailsLoading(false);
-    };
-  };
-
-   const shareCardiologyDetails = async (recordId: string) => {
-    setShareLoading(true);
-    try {
-      const response = await web5.dwn.records.query({
-        message: {
-          filter: {
-            recordId: recordId,
-          },
-        },
-      });
-  
-      if (response.records && response.records.length > 0) {
-        const record = response.records[0];
-        const { status } = await record.send(recipientDid);
-        console.log('Send record status in shareProfile', status);
-        toast.success('Successfully shared cardiology record', {
-          position: toast.POSITION.TOP_RIGHT,
-          autoClose: 3000,
-        });
-        setShareLoading(false);
-        setSharePopupOpen(false);
-      } else {
-        console.error('No record found with the specified ID');
-        toast.error('Failed to share cardiology record', {
-          position: toast.POSITION.TOP_RIGHT,
-          autoClose: 3000,
-        });
-      }
-      setShareLoading(false);
-    } catch (err) {
-      console.error('Error in shareProfile:', err);
-      toast.error('Error in shareProfile. Please try again later.', {
-        position: toast.POSITION.TOP_RIGHT,
-        autoClose: 5000,
-      });
-      setShareLoading(false);
-    }
-  };
-
-  const deleteCardiologyDetails = async (recordId) => {
-    try {
-      const response = await web5.dwn.records.query({
-        message: {
-          filter: {
-            recordId: recordId,
-          },
-        },
-      });
-      console.log(response);
-      if (response.records && response.records.length > 0) {
-        const record = response.records[0];
-        console.log(record)
-        const deleteResult = await web5.dwn.records.delete({
-          message: {
-            recordId: recordId
-          },
-        });
-  
-        const remoteResponse = await web5.dwn.records.delete({
-          from: myDid,
-          message: {
-            recordId: recordId,
-          },
-        });
-        console.log(remoteResponse);
-        
-        if (deleteResult.status.code === 202) {
-          console.log('Cardiology Details deleted successfully');
-          toast.success('Cardiology Details deleted successfully', {
-            position: toast.POSITION.TOP_RIGHT,
-            autoClose: 3000, 
-          });
-          setUserDetails(prevCardiologyDetails => prevCardiologyDetails.filter(message => message.recordId !== recordId));
-        } else {
-          console.error('Error deleting record:', deleteResult.status);
-          toast.error('Error deleting record:', {
-            position: toast.POSITION.TOP_RIGHT,
-            autoClose: 3000, 
-          });
-        }
-      } else {
-        // console.error('No record found with the specified ID');
-      }
+      hideDeleteConfirmation();
     } catch (error) {
-      console.error('Error in deleteCardiologyDetails:', error);
+      console.error('Error in deleting record:', error);
+      toast.error('Error in deleting record:', {
+        position: toast.POSITION.TOP_RIGHT,
+        autoClose: 3000, 
+      });
     }
   };
+
+  const formatDateTime = (date: any) => {
+    const d = new Date(date);
+    return d.toLocaleString();
+  }
 
    return (
     <>
@@ -340,7 +167,7 @@ const CardiologyDetails = (props) => {
           Cardiology Information
         </div>
         <div className="flex flex-row mb-5 items-center gap-10 justify-end">
-          {userType === 'doctor' && (
+          {userType === 'patient' && (
             <>
           <button
             ref={trigger}
@@ -385,12 +212,12 @@ const CardiologyDetails = (props) => {
                         <label className="mb-2.5 block text-black dark:text-white">
                           Heart Condition
                         </label>
-                        <div className={`relative ${userDetails?.heartCondition ? 'bg-light-blue' : ''}`}>
+                        <div className={`relative ${cardiologyData?.heartCondition ? 'bg-light-blue' : ''}`}>
                         <input
                           type="text"
                           name="heartCondition"
                           required
-                          value={userDetails?.heartCondition}
+                          value={cardiologyData?.heartCondition}
                           onChange={handleInputChange}
                           placeholder="Heart Condition"
                           className="w-full rounded-lg border-[1.5px] border-stroke bg-transparent py-2 px-5 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus-border-primary"/>
@@ -401,12 +228,12 @@ const CardiologyDetails = (props) => {
                         <label className="mb-2.5 block text-black dark:text-white">
                           Test Performed
                         </label>
-                        <div className={`relative ${userDetails?.testPerformed ? 'bg-light-blue' : ''}`}>
+                        <div className={`relative ${cardiologyData?.testPerformed ? 'bg-light-blue' : ''}`}>
                         <input
                            type="text" 
                           name="testPerformed"
                           required
-                          value={userDetails?.testPerformed}
+                          value={cardiologyData?.testPerformed}
                           placeholder='Test Performed'
                           onChange={handleInputChange}
                           className="w-full rounded-lg border-[1.5px] border-stroke bg-transparent py-2 px-5 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus-border-primary"/>
@@ -417,11 +244,11 @@ const CardiologyDetails = (props) => {
                         <label className="mb-2.5 block text-black dark:text-white">
                           Test Result
                         </label>
-                        <div className={`relative ${userDetails?.testResult ? 'bg-light-blue' : ''}`}>
+                        <div className={`relative ${cardiologyData?.testResult ? 'bg-light-blue' : ''}`}>
                         <input
                             type='text'
                               name="testResult"
-                              value={userDetails?.testResult}
+                              value={cardiologyData?.testResult}
                               onChange={handleInputChange}
                               required
                               placeholder='Test Result'
@@ -436,11 +263,11 @@ const CardiologyDetails = (props) => {
                         <label className="mb-2.5 block text-black dark:text-white">
                           Treatment
                         </label>
-                        <div className={`relative ${userDetails?.treatment ? 'bg-light-blue' : ''}`}>
+                        <div className={`relative ${cardiologyData?.treatment ? 'bg-light-blue' : ''}`}>
                         <textarea
                           name="treatment"
                           row={3}
-                          value={userDetails?.treatment}
+                          value={cardiologyData?.treatment}
                           required
                           onChange={handleInputChange}
                           placeholder="Treatment"
@@ -479,90 +306,7 @@ const CardiologyDetails = (props) => {
           >
             <FontAwesomeIcon icon={faShare} />
           </button>
-          {sharePopupOpen && (
-                <div
-                  ref={popup}
-                  className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50"
-                >
-                  <div
-                      className="lg:mt-15 lg:w-1/2 rounded-lg bg-white dark:bg-dark pt-3 px-4 shadow-md"
-                      style={{ maxHeight: 'calc(100vh - 200px)', overflowY: 'scroll' }}
-                    >      
-                    <div
-                      className="w-full wow fadeInUp mb-12 rounded-lg bg-primary/[5%] py-11 px-8 dark:bg-dark sm:p-[55px] lg:mb-5 lg:px-8 xl:p-[55px]"
-                      data-wow-delay=".15s
-                      ">        
-                        <div className="flex flex-row justify-between ">
-                          <h2 className="text-xl font-semibold mb-4">Share Cardiology Details</h2>
-                          <div className="flex justify-end">
-                            <button
-                              onClick={() => setSharePopupOpen(false)}
-                              className="text-blue-500 hover:text-gray-700 focus:outline-none"
-                            >
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                className="h-5 w-5 fill-current bg-primary rounded-full p-1 hover:bg-opacity-90"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="white"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth="2"
-                                  d="M6 18L18 6M6 6l12 12"
-                                />
-                              </svg>
-                            </button>
-                          </div>  
-                        </div>
-                      <form>
-                    <div className="-mx-4 flex flex-wrap">
-                      <div className="w-full px-4">
-                        <div className="mb-8">
-                          <label
-                            htmlFor="recipientDid"
-                            className="mb-3 block text-sm font-medium text-dark dark:text-white"
-                          >
-                            Recipient DID
-                          </label>
-                          <div>
-                          <input
-                            type="text"
-                            name="recipientDid"
-                            value={recipientDid}
-                            onChange={(e) => setRecipientDid(e.target.value)}
-                            placeholder="Paste Recipient DID"
-                            required
-                            className="w-full rounded-lg border border-transparent py-3 px-6 text-base text-body-color placeholder-body-color shadow-one outline-none focus:border-primary focus-visible:shadow-none dark:bg-[#242B51] dark:shadow-signUp"
-                          />
-                          </div>
-                        </div>
-                      </div>
-                      
-                      
-                      <div className="w-full px-4">
-                        <button 
-                          type="button"
-                          onClick={() => shareCardiologyDetails(userDetails.recordId)}
-                          disabled={shareLoading}
-                          className="rounded-lg bg-primary py-4 px-9 text-base font-medium text-white transition duration-300 ease-in-out hover:bg-opacity-80 hover:shadow-signUp">
-                          {shareLoading ? (
-                            <div className="flex items-center">
-                              <div className="spinner"></div>
-                              <span className="pl-1">Sharing...</span>
-                            </div>
-                          ) : (
-                            <>Share</>
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                      </form>
-                      </div>
-                    </div>
-                </div>
-              )}
+         
 
           <button
             onClick={() => setCardOpen(!isCardOpen)}
@@ -575,9 +319,9 @@ const CardiologyDetails = (props) => {
 
       {isCardOpen && (
         <>
-            {userDetails?.length > 0 ? (
+            {getCardiology != null && getCardiology?.length > 0 ? (
             <>
-            {userDetails?.map((user, index) => (
+            {getCardiology?.map((user, index) => (
           <div className="flex w-full" key={index}>
             <div className='w-1/3 mb-5'>
               <span className="text-xl">Heart Condition</span>
@@ -610,14 +354,14 @@ const CardiologyDetails = (props) => {
             <div className='w-1/3 mb-5'>
               <span className="text-xl">Timestamp</span>
               <h4 className="text-xl mt-1 font-medium text-black dark:text-white">
-                {user.timestamp}
+                {formatDateTime(user._creationTime)}
               </h4>
             </div>
 
-            {userType === 'doctor' && (
+            {userType === 'patient' && (
             <>
             <button
-                onClick={() => showDeleteConfirmation(user.recordId)}
+                onClick={() => showDeleteConfirmation(user._id)}
                 className="rounded-lg bg-danger py-0 px-3 h-10 text-center font-medium text-white hover-bg-opacity-90"
               >
                 Delete
@@ -636,7 +380,7 @@ const CardiologyDetails = (props) => {
                       <button
                         onClick={() => {
                           hideDeleteConfirmation();
-                          deleteCardiologyDetails(user.recordId);
+                          deleteCardiologyDetails(user._id);
                         }}
                         className="rounded bg-danger py-2 px-3 text-white hover:bg-opacity-90"
                       >

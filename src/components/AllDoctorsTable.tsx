@@ -13,15 +13,10 @@ const DoctorsTable: React.FC = () => {
   const [doctorToRevokeId, setDoctorToRevokeId] = useState<number | null>(null);
   const [sortDropdownVisible, setSortDropdownVisible] = useState(false);
   const [filterDropdownVisible, setFilterDropdownVisible] = useState(false);
-  const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
   const [sortOption, setSortOption] = useState<string>(''); 
-  const [shareLoading, setShareLoading] = useState(false);
-  const [sharePopupOpen, setSharePopupOpen] = useState(false);
   const [updateLoading, setUpdateLoading] = useState(false);
-  const [recipientDid, setRecipientDid] = useState("");
   const [fetchDetailsLoading, setFetchDetailsLoading] = useState(false);
   const [filterOption, setFilterOption] = useState<string>(''); 
-  const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
   const [popupOpenMap, setPopupOpenMap] = useState<{ [key: number]: boolean }>({});
   const [issueVCOpenMap, setIssueVCOpenMap] = useState<{ [key: number]: boolean }>({});
@@ -33,7 +28,6 @@ const DoctorsTable: React.FC = () => {
 
   const trigger = useRef<HTMLButtonElement | null>(null);
   const popup = useRef<HTMLDivElement | null>(null); 
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const togglePopup = (doctorId: string) => {
     setPopupOpenMap((prevMap) => ({
@@ -83,12 +77,6 @@ const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>)
     ...prevFormData,
     [name]: value,
   }));
-
-  const file = e.target.files?.[0];
-
-  if (file) {
-    setSelectedFileName(file.name);
-  } 
 };
 
 // const doctorDid = doctorsDetails.map((doctor) => doctor.sender);
@@ -104,110 +92,13 @@ const showRevokeConfirmation = (doctorId: string) => {
     setRevokeConfirmationVisible(false);
   };
 
-  const updateHealthDetails = async (recordId, data) => {
-    setUpdateLoading(true);
-  try {
-    const response = await web5.dwn.records.query({
-      message: {
-        filter: {
-          recordId: recordId,
-        },
-      },
-    });
-
-    if (response.records && response.records.length > 0) {
-      const record = response.records[0];
-      const updateResult = await record.update({data: data});
-      togglePopup(recordId)
-      if (updateResult.status.code === 202) {
-        toast.success('Health Details updated successfully.', {
-          position: toast.POSITION.TOP_RIGHT,
-          autoClose: 3000, 
-        });
-        setDoctorsDetails(prevHealthDetails => prevHealthDetails.map(message => message.recordId === recordId ? { ...message, ...data } : message));
-        setUpdateLoading(false);
-        // updateResult.send(doctorDid);
-      } else {
-        console.error('Error updating message:', updateResult.status);
-        toast.error('Error updating campaign', {
-          position: toast.POSITION.TOP_RIGHT,
-          autoClose: 3000, 
-        });
-        setUpdateLoading(false);
-      }
-    } else {
-      console.error('No record found with the specified ID');
-      toast.error('No record found with the specified ID', {
-        position: toast.POSITION.TOP_RIGHT,
-        autoClose: 3000, 
-      });
-    }
-  } catch (error) {
-    console.error('Error in updateHealthDetail:', error);
-    toast.error('Error in updateHealthDetail:', {
-      position: toast.POSITION.TOP_RIGHT,
-      autoClose: 3000, 
-    });
-    setUpdateLoading(false);
-  }
-};
-
-
 const deleteHealthDetails = async (recordId) => {
   try {
-    const response = await web5.dwn.records.query({
-      message: {
-        filter: {
-          recordId: recordId,
-        },
-      },
-    });
-    console.log(response);
-    if (response.records && response.records.length > 0) {
-      const record = response.records[0];
-      console.log(record)
-      const deleteResult = await web5.dwn.records.delete({
-        message: {
-          recordId: recordId
-        },
-      });
-
-      const remoteResponse = await web5.dwn.records.delete({
-        from: myDid,
-        message: {
-          recordId: recordId,
-        },
-      });
-      console.log(remoteResponse);
-      
-      if (deleteResult.status.code === 202) {
-        console.log('Health Details deleted successfully');
-        toast.success('Health Details deleted successfully', {
-          position: toast.POSITION.TOP_RIGHT,
-          autoClose: 3000, 
-        });
-        setDoctorsDetails(prevHealthDetails => prevHealthDetails.filter(message => message.recordId !== recordId));
-      } else {
-        console.error('Error deleting record:', deleteResult.status);
-        toast.error('Error deleting record:', {
-          position: toast.POSITION.TOP_RIGHT,
-          autoClose: 3000, 
-        });
-      }
-    } else {
-      // console.error('No record found with the specified ID');
-    }
+ 
   } catch (error) {
     console.error('Error in deleteHealthDetails:', error);
   }
 };
- 
-  const formatDatetime = (datetimeString) => {
-    const options = { year: 'numeric', month: 'long', day: 'numeric' };
-    const formattedDate = new Date(datetimeString).toLocaleDateString(undefined, options);
-    return formattedDate;
-  };
-
 
   const toggleSortDropdown = () => {
     setSortDropdownVisible(!sortDropdownVisible);

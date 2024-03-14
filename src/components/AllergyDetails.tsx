@@ -1,5 +1,7 @@
 import { useState, useRef, useContext, ChangeEvent, FormEvent, useEffect } from 'react';
 import { toast } from 'react-toastify'; 
+import { useQuery, useMutation } from "convex/react";
+import { api } from "../../convex/_generated/api";
 import 'react-toastify/dist/ReactToastify.css'; 
 import '../pages/signin.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -7,8 +9,6 @@ import { faPlus, faShare, faAngleDown } from '@fortawesome/free-solid-svg-icons'
 import HealthDetails from './HealthDetails';
 const AllergyDetails = (props) => {
   
-  // const { web5, myDid, profileProtocolDefinition, userType } = useContext( Web5Context);
-
   const [isCardOpen, setCardOpen] = useState(false);
   const [popupOpen, setPopupOpen] = useState(false);
   const [recipientDid, setRecipientDid] = useState("");
@@ -31,15 +31,10 @@ const AllergyDetails = (props) => {
     treatment: '',
   }); 
 
-  const parentId = JSON.parse(localStorage.getItem('recordId'));
-  const contextId = JSON.parse(localStorage.getItem('contextId'));
+  const userId = localStorage.getItem('recordId');
 
   const patientDid = props.patientDid;
       console.log(patientDid);
-      
-  useEffect(() => {
-    fetchAllergyDetails();
-  }, []);
 
   const showDeleteConfirmation = (userId: string) => {
     setUserToDeleteId(userId);

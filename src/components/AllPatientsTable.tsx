@@ -1,13 +1,13 @@
-import React, { useState, useRef, useEffect, useContext, ChangeEvent } from 'react';
+import React, { useState } from 'react';
+import { useQuery, useMutation } from "convex/react";
+import { api } from "../../convex/_generated/api";
 import { toast } from 'react-toastify'; 
 import { useNavigate } from 'react-router-dom';
 import 'react-toastify/dist/ReactToastify.css'; 
 import PatientImage from '../images/user/4.png';
 
-
 const PatientsTable: React.FC = () => {
 
-  // const { web5, myDid } = useContext( Web5Context);
   const navigate = useNavigate();
 
   const [patientsDetails, setPatientsDetails] = useState<Patient[]>([]);
@@ -17,113 +17,15 @@ const PatientsTable: React.FC = () => {
   const [sortOption, setSortOption] = useState<string>(''); 
   const [filterOption, setFilterOption] = useState<string>(''); 
 
+  const userId = localStorage.getItem("userId");
+
+  const fetchPatient = useQuery(api.patients.getPatient, { _id: userId });
 
   const formatAge = (dateOfBirth) => {
     const today = new Date();
     const birthDate = new Date(dateOfBirth);
     let age = today.getFullYear() - birthDate.getFullYear();
     return age;
-  };
-
-  useEffect(() => {
-  
-      fetchHealthDetails();
-  
-  } , []);
-  
-  const fetchHealthDetails = async () => {
-    try {
-      const response = await web5.dwn.records.query({
-        from: myDid,
-        message: {
-          filter: {
-              protocol: 'https://rapha.com/protocol',
-              protocolPath: 'patientProfile',
-          },
-        },
-      });
-      console.log('Health Details:', response);
-  
-      if (response.status.code === 200) {
-        const healthDetails = await Promise.all(
-          response.records.map(async (record) => {
-            const data = await record.data.json();
-            console.log(data);
-            return {
-              ...data,
-              recordId: record.id,
-            };
-          })
-        );
-        setPatientsDetails(healthDetails);
-        console.log(healthDetails);
-        toast.success('Successfully fetched patient details', {
-          position: toast.POSITION.TOP_RIGHT,
-          autoClose: 3000,
-        });
-      } else {
-        console.error('No patient details found');
-        toast.error('Failed to fetch patient details', {
-          position: toast.POSITION.TOP_RIGHT,
-          autoClose: 3000,
-        });
-      }
-    } catch (err) {
-      console.error('Error in fetchDOctorDetails:', err);
-      toast.error('Error in fetchDOctorDetails. Please try again later.', {
-        position: toast.POSITION.TOP_RIGHT,
-        autoClose: 5000,
-      });
-    };
-  };
-
-  const deleteHealthDetails = async (recordId) => {
-    try {
-      const response = await web5.dwn.records.query({
-        message: {
-          filter: {
-            recordId: recordId,
-          },
-        },
-      });
-      console.log(response);
-      if (response.records && response.records.length > 0) {
-        const record = response.records[0];
-        console.log(record)
-        const deleteResult = await web5.dwn.records.delete({
-          message: {
-            recordId: recordId
-          },
-        });
-  
-        const remoteResponse = await web5.dwn.records.delete({
-          from: myDid,
-          message: {
-            recordId: recordId,
-          },
-        });
-        console.log(remoteResponse);
-        
-        if (deleteResult.status.code === 202) {
-          console.log('Health Details deleted successfully');
-          toast.success('Health Details deleted successfully', {
-            position: toast.POSITION.TOP_RIGHT,
-            autoClose: 3000, 
-          });
-          setPatientsDetails(prevHealthDetails => prevHealthDetails.filter(message => message.recordId !== recordId));
-        } else {
-          console.error('Error deleting record:', deleteResult.status);
-          toast.error('Error deleting record:', {
-            position: toast.POSITION.TOP_RIGHT,
-            autoClose: 3000, 
-          });
-        }
-      } else {
-        // console.error('No record found with the specified ID');
-      }
-    } catch (error) {
-      console.error('Error in deleteHealthDetails:', error);
-    }
   };
 
   const toggleSortDropdown = () => {
@@ -154,7 +56,7 @@ const PatientsTable: React.FC = () => {
     if (option !== '') {
     filteredData = filteredData.filter((patient) => patient.name === option);
     } else {
-      fetchHealthDetails();
+      // fetchHealthDetails();
     }
 
    setPatientsDetails(filteredData);

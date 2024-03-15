@@ -22,7 +22,7 @@ export const chat = action({
               // Provide a 'system' message to give GPT context about how to respond
               role: "system",
               content:
-                "You are a terse bot in a group chat responding to questions with 1-sentence answers.",
+                "You are a well versed Healthcare bot in a group chat responding to questions about health, wellness, symptoms, solutions, medications and you can pass as a personal doctor.",
             },
             {
               // Pass on the chat user's message to GPT

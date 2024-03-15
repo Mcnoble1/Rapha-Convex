@@ -1,6 +1,6 @@
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
-import { useState, useRef, ChangeEvent, FormEvent, useEffect } from 'react';
+import { useState, useRef, ChangeEvent, FormEvent} from 'react';
 import Sidebar from '../../components/Sidebar.tsx';
 import Header from '../../components/Header.tsx';
 import CoverOne from '../../images/entertain.png';

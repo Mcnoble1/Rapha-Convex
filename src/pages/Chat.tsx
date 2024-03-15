@@ -9,7 +9,6 @@ import 'react-toastify/dist/ReactToastify.css';
 import DoctorImage from '../images/user/3.png';
 import PatientImage from '../images/user/4.png';
 
-
 export default function Home() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { userType  } = "patient";
@@ -42,12 +41,6 @@ export default function Home() {
     acc[recipient].push(chat);
     return acc;
   }, {});
-
-  // useEffect(() => {
-  //   if (web5 && myDid) {
-  //      fetchChats();
-  //   }
-  // }, []);
 
 useEffect(() => {
   const intervalId = setInterval(async () => {

@@ -3,6 +3,7 @@ import { lazy } from 'react';
 const Doctor = lazy(() => import('../pages/Doctor/Dashboard'));
 const Patient = lazy(() => import('../pages/Patient/Dashboard'));
 const Chat = lazy(() => import('../pages/Chat'));
+const Ai = lazy(() => import('../pages/Ai'));
 const Records = lazy(() => import('../pages/Patient/Records'));
 const Admin = lazy(() => import('../pages/Admin/Dashboard'));
 const Patients = lazy(() => import('../pages/Doctor/Patients'));
@@ -23,6 +24,11 @@ const coreRoutes = [
     path: '/chat',
     title: 'Chat',
     component: Chat,
+  },
+  {
+    path: '/ai',
+    title: 'Ai',
+    component: Ai,
   },
   {
     path: '/patient/records',

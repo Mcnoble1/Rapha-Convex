@@ -20,8 +20,10 @@ export const send = mutation({
     // Send a new message.
     await ctx.db.insert("chats", { body, author });
     // Schedule the chat action to run immediately
+    if ( author !== "RaphaAI") {
     await ctx.scheduler.runAfter(0, api.openai.chat, {
     messageBody: body,
     });
+    }
   },
 });

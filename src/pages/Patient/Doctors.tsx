@@ -38,33 +38,10 @@ const Doctors: React.FC = () => {
     }));
   };
 
-  useEffect(() => {
-    // fetchDoctors();
-  }, []);
-
 
   const doctors = useQuery(api.doctors.getDoctors);
     // setDoctorsDetails(doctors);
     // console.log('DoctorList:', doctors);
-
-//   const fetchDoctors = () => {
-//   try {
-//     const doctors = useQuery(api.doctors.getDoctors);
-//     setDoctorsDetails(doctors);
-//     console.log('DoctorList:', doctors);
-//     toast.success('Doctors fetched successfully.', {
-//       position: toast.POSITION.TOP_RIGHT,
-//       autoClose: 5000,
-//     });
-//   } catch (err) {
-//     console.error('Error in fetchDoctorDetails:', err);
-//     toast.error('Error in fetchDoctorDetails. Please try again later.', {
-//       position: toast.POSITION.TOP_RIGHT,
-//       autoClose: 5000,
-//     });
-//   };
-// };
-  
 
   return (
     <div className="dark:bg-boxdark-2 dark:text-bodydark">

@@ -1,4 +1,4 @@
-import { useState, useContext, useEffect } from "react";
+import { useState, useEffect } from "react";
 import Breadcrumb from '../components/Breadcrumb';
 import Sidebar from '../components/Sidebar';
 import DoctorSidebar from '../components/DoctorSidebar';
@@ -11,7 +11,7 @@ import PatientImage from '../images/user/4.png';
 
 export default function Home() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { userType  } = "patient";
+  const userType = localStorage.getItem('userType');
   const navigate = useNavigate();
 
   const queryString = window.location.search;
@@ -101,30 +101,9 @@ useEffect(() => {
   };
 
   const fetchChats = async () => {
-    const { records, status: recordStatus } = await web5.dwn.records.query({
-      message: {
-        filter: {
-          protocol: "https://rapha.com/protocol",
-          protocolPath: "chat",
-        },
-        dateSort: "createdAscending",
-      },
-    });
-    // console.log(records);
-
+    
     try {
-      const results = await Promise.all(
-        records.map(async (record) => record.data.json())
-      );
-
-      if (recordStatus.code == 200) {
-        const received = results.filter((result) => result?.recipient === myDid);
-        // console.log(received);
-        const sent = results.filter((result) => result?.sender === myDid);
-        // console.log(sent)
-        setReceivedChats(received);
-        setSentChats(sent);
-      }
+    
     } catch (error) {
       console.error(error);
     }

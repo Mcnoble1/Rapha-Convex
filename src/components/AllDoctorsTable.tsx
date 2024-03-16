@@ -20,10 +20,8 @@ const DoctorsTable: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [popupOpenMap, setPopupOpenMap] = useState<{ [key: number]: boolean }>({});
   const [issueVCOpenMap, setIssueVCOpenMap] = useState<{ [key: number]: boolean }>({});
-  const [vcData, setVcData] = useState<{ specialty: string, hospital: string, licenseStatus: string; }>({
-    specialty: "",
-    hospital: "",
-    licenseStatus: "",
+  const [vcData, setVcData] = useState<{ status: string }>({
+    status: "",
   });
 
   const trigger = useRef<HTMLButtonElement | null>(null);
@@ -59,6 +57,7 @@ setIssueVCOpenMap((prevMap) => ({
 
 
 const doctors = useQuery(api.doctors.getDoctors);
+const updateDoctor = useMutation(api.doctors.updateDoctor, { doctorId, ...data, licenseStatus });
 
 
 const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -82,6 +81,22 @@ const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>)
 // const doctorDid = doctorsDetails.map((doctor) => doctor.sender);
 // console.log(doctorDid);
 
+const verifyDoctor = async (recordId: any) => {
+
+    setVcData({
+      status: "",
+    });
+
+    console.log(doctors);
+
+    doctors.filter((doctor) => doctor._id === recordId)[0].status = 'Verified';
+
+    console.log(doctors)
+
+    updateDoctor(recordId, {});
+
+};
+
 const showRevokeConfirmation = (doctorId: string) => {
     setDoctorToRevokeId(doctorId);
     setRevokeConfirmationVisible(true);
@@ -91,14 +106,6 @@ const showRevokeConfirmation = (doctorId: string) => {
     setDoctorToRevokeId(null);
     setRevokeConfirmationVisible(false);
   };
-
-const deleteHealthDetails = async (recordId) => {
-  try {
- 
-  } catch (error) {
-    console.error('Error in deleteHealthDetails:', error);
-  }
-};
 
   const toggleSortDropdown = () => {
     setSortDropdownVisible(!sortDropdownVisible);
@@ -115,6 +122,11 @@ const deleteHealthDetails = async (recordId) => {
     setSortOption(option);
     setSortDropdownVisible(false);
   };
+
+  const formatDateTime = (date: any) => {
+    const d = new Date(date);
+    return d.toLocaleString();
+  }
 
   return (
     <div className="rounded-sm border border-stroke bg-white px-5 pt-6 pb-2.5 shadow-default dark:border-strokedark dark:bg-boxdark sm:px-7.5 xl:pb-1">
@@ -174,7 +186,7 @@ const deleteHealthDetails = async (recordId) => {
           <tbody>
             {/* Table body */}
             {doctors?.map((doctor, index) => (
-              <tr key={doctor.recordId} className={`border-b border-stroke dark:border-strokedark ${index === 0 ? 'rounded-t-sm' : ''}`}>
+              <tr key={doctor._id} className={`border-b border-stroke dark:border-strokedark ${index === 0 ? 'rounded-t-sm' : ''}`}>
                 <td className="p-2.5 xl:p-5">
                   <div className="flex gap-3">
                     <div className="flex-shrink-0 ">
@@ -190,25 +202,25 @@ const deleteHealthDetails = async (recordId) => {
                 <td className="p-2.5 xl:p-5 ">{doctor.specialty}</td>
                 <td className="p-2.5 xl:p-5 ">{doctor.gender}</td>
                 <td className="p-2.5 xl:p-5"><span className={` ${doctor.status === 'Verified' ? 'bg-success' : 'bg-warning'} p-2 text-white rounded-xl`}>{doctor.status}</span></td>
-                <td className="p-2.5 xl:p-5 ">{doctor.timestamp}</td>
+                <td className="p-2.5 xl:p-5 ">{formatDateTime(doctor._creationTime)}</td>
                 <td className="p-2.5 xl:p-5 ">
                   <div className="flex flex-row gap-4">
 
                   {doctor.status === 'Verified' ? (
                     <button 
-                        onClick={() => showRevokeConfirmation(doctor.recordId)}                      
+                        onClick={() => showRevokeConfirmation(doctor._id)}                      
                         className="rounded bg-danger py-2 px-3 text-white hover:bg-opacity-90">
                       Revoke
                     </button>
                     ) : (
                     <button 
-                        onClick={() => togglePopup(doctor.recordId)}                      
+                        onClick={() => togglePopup(doctor._id)}                      
                         className="rounded bg-primary py-2 px-3 text-white hover:bg-opacity-90">
                       Verify
                     </button>
                     )}
                     <button 
-                        onClick={() => deleteHealthDetails(doctor.recordId)}                      
+                        onClick={() => deleteHealthDetails(doctor._id)}                      
                         className="rounded bg-danger py-2 px-3 text-white hover:bg-opacity-90">
                       Delete
                     </button>
@@ -226,7 +238,7 @@ const deleteHealthDetails = async (recordId) => {
                             <button
                               onClick={() => {
                                 hideRevokeConfirmation();
-                                // deleteHealthDetails(doctor.recordId);
+                                // deleteHealthDetails(doctor._id);
                               }}
                               className="rounded bg-danger py-2 px-3 text-white hover:bg-opacity-90"
                             >
@@ -237,7 +249,7 @@ const deleteHealthDetails = async (recordId) => {
                       </div>
                     )}
 
-                    {popupOpenMap[doctor.recordId] && (
+                    {popupOpenMap[doctor._id] && (
                             <div
                               ref={popup}
                               className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50"
@@ -250,7 +262,7 @@ const deleteHealthDetails = async (recordId) => {
                                     <h2 className="text-xl text-black font-semibold mb-4">Doctor Details</h2>
                                     <div className="flex justify-end">
                                       <button
-                                        onClick={() => closePopup(doctor.recordId)}
+                                        onClick={() => closePopup(doctor._id)}
                                         className="text-blue-500 hover:text-gray-700 focus:outline-none"
                                       >
                                         <svg
@@ -373,12 +385,12 @@ const deleteHealthDetails = async (recordId) => {
 
                                   <div className="relative">
                                     <button
-                                      onClick={() =>  togglePop(doctor.recordId)}                      
+                                      onClick={() =>  togglePop(doctor._id)}                      
                                       className="inline-flex mb-5 items-center justify-center rounded-full bg-primary py-3 px-10 text-center font-medium text-white hover:bg-opacity-90 lg:px-8 xl:px-10"
                                       >
-                                      Issue VC
+                                      Verify
                                     </button>
-                                      {issueVCOpenMap[doctor.recordId] && (
+                                      {issueVCOpenMap[doctor._id] && (
                                             <div
                                               ref={popup}
                                               className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-90"
@@ -388,10 +400,10 @@ const deleteHealthDetails = async (recordId) => {
                                                   style={{ maxHeight: 'calc(100vh - 200px)', overflowY: 'scroll' }}
                                                 >              
                                                     <div className="flex flex-row justify-between">
-                                                    <h2 className="text-xl font-semibold mb-4">Issue Certified Doctor VC</h2>
+                                                    <h2 className="text-xl font-semibold mb-4">Certify Doctor</h2>
                                                     <div className="flex justify-end">
                                                       <button
-                                                        onClick={() => closePop(doctor.recordId)}
+                                                        onClick={() => closePop(doctor._id)}
                                                         className="text-blue-500 hover:text-gray-700 focus:outline-none"
                                                       >
                                                         <svg
@@ -416,7 +428,7 @@ const deleteHealthDetails = async (recordId) => {
                                                   <div className="mb-4.5 flex flex-col gap-6 xl:flex-row">
                                                   <div className="w-full xl:w-3/5">
                                                       <label className="mb-2.5 block text-black dark:text-white">
-                                                        Specialty
+                                                        License Status
                                                       </label>
                                                       <div className={`relative ${vcData.specialty ? 'bg-light-blue' : ''}`}>
                                                       <select
@@ -425,87 +437,30 @@ const deleteHealthDetails = async (recordId) => {
                                                           onChange={handleInputChange}
                                                           required
                                                           className="w-full rounded-lg border-[1.5px] border-stroke bg-transparent py-2 px-5 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus-border-primary">
-                                                          <option value="">Select Specialty</option>                        
-                                                          <option value="Family Medicine">Family Medicine</option>
-                                                          <option value="General Medicine">General Medicine</option>
-                                                          <option value="Internal Medicine">Internal Medicine</option>
-                                                          <option value="Emergency Medicine">Emergency Medicine</option>
-                                                          <option value="Preventive Medicine">Preventive Medicine</option>
-                                                          <option value="Occupational Medicine">Occupational Medicine</option>
-                                                          <option value="Pediatrics">Pediatrics</option>
-                                                          <option value="Psychiatry">Psychiatry</option>
-                                                          <option value="Surgery">Surgery</option>
-                                                          <option value="Obstetrics and Gynecology">Obstetrics and Gynecology</option>
-                                                          <option value="Neurology">Neurology</option>
-                                                          <option value="Cardiology">Cardiology</option>
-                                                          <option value="Dermatology">Dermatology</option>
-                                                          <option value="Ophthalmology">Ophthalmology</option>
-                                                          <option value="Orthopedics">Orthopedics</option>
-                                                          <option value="Otolaryngology">Otolaryngology</option>
-                                                          <option value="Urology">Urology</option>
-                                                          <option value="Radiology">Radiology</option>
-                                                          <option value="Anesthesiology">Anesthesiology</option>
-                                                          <option value="Pathology">Pathology</option>
-                                                          <option value="Medical Genetics">Medical Genetics</option>
-                                                          <option value="Public Health">Public Health</option>
-                                                          <option value="Nursing">Nursing</option>
-                                                          <option value="Physiotherapy">Physiotherapy</option>
-                                                          <option value="Dentistry">Dentistry</option>
-                                                          <option value="Nutrition">Nutrition</option>
-                                                          <option value="Veterinary Medicine">Veterinary Medicine</option>
-                                                          <option value="Other">Other</option>
+                                                          <option value="">Set Status</option>                        
+                                                          <option value="Verified">Verified</option>
+                                                          <option value="Unverified">Unverified</option>
                                                         </select> 
                                                       </div>
                                                     </div>
 
-                                                    <div className="w-full xl:w-3/5">
-                                                      <label className="mb-2.5 block text-black dark:text-white">
-                                                        Hospital
-                                                      </label>
-                                                      <div className={`relative ${vcData.hospital ? 'bg-light-blue' : ''}`}>
-                                                      <input
-                                                        type="text"
-                                                        name="hospital"
-                                                        required
-                                                        value={vcData.hospital}
-                                                        onChange={handleInputChange}
-                                                        className="w-full rounded-lg border-[1.5px] border-stroke bg-transparent py-2 px-5 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus-border-primary"/>
-                                                      </div>
-                                                    </div>
-
-                                                    <div className="w-full xl:w-3/5">
-                                                      <label className="mb-2.5 block text-black dark:text-white">
-                                                        License Status
-                                                      </label>
-                                                      <div className={`relative ${vcData.licenseStatus? 'bg-light-blue' : ''}`}>
-                                                      <select
-                                                          name="licenseStatus"
-                                                          value={vcData.licenseStatus}
-                                                          onChange={handleInputChange}
-                                                          required
-                                                          className="w-full rounded-lg border-[1.5px] border-stroke bg-transparent py-2 px-5 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus-border-primary">
-                                                          <option value="">Select</option>                        
-                                                          <option value="Valid">Valid</option>
-                                                          <option value="Invalid">Invalid</option>                                                     
-                                                        </select>  
-                                                      </div>
-                                                    </div>
+                                                   
                                                    </div>    
                                                   </div>
                                                   </form>
                                                 <button
                                                   type="button"
-                                                  onClick={() => issueVC(doctor.recordId)}
+                                                  onClick={() => verifyDoctor(doctor._id)}
                                                   disabled={updateLoading}
                                                   className={`mr-5 mb-5 inline-flex items-center justify-center gap-2.5 rounded-full bg-primary py-4 px-10 text-center font-medium text-white hover:bg-opacity-90 lg:px-8 xl:px-10 ${updateLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                                                 >
                                                   {updateLoading ? (
                                                     <div className="flex items-center">
                                                       <div className="spinner"></div>
-                                                      <span className="pl-1">Issuing...</span>
+                                                      <span className="pl-1">Verifying...</span>
                                                     </div>
                                                   ) : (
-                                                    <>Issue</>
+                                                    <>Verify</>
                                                   )}
                                                 </button>
                                                 </div>

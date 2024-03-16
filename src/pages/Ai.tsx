@@ -10,7 +10,7 @@ import './ai.css';
 export default function Home() {
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { userType  } = "patient";
+  const userType = localStorage.getItem("userType");
 
   const chats = useQuery(api.chats.list);
   const sendChat = useMutation(api.chats.send);
@@ -38,16 +38,16 @@ export default function Home() {
           <main>
             <div className="mx-auto max-w-screen-2xl p-4 md:p-6 2xl:p-10">
               <div className="mb-6 flex flex-row gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <Breadcrumb pageName="Rapha AI" />   
+                <Breadcrumb pageName="Rapha AI: Your Personal Healthcare Assistant" />   
               </div>
               <div className="flex flex-col gap-10">
-              <div className="h-screen rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark xl:flex">
+              <div className="rounded-sm border border-stroke  shadow-default dark:border-strokedark dark:bg-boxdark xl:flex">
 
                 <div className="chat">
                     {chats?.map((chat) => (
                         <article
                         key={chat._id}
-                        className={chat.author === "Fes" ? "message-mine" : ""}
+                        className={chat.author === "You" ? "message-mine" : ""}
                         >
                         <div>{chat.author}</div>
 
@@ -60,7 +60,7 @@ export default function Home() {
                         className=""
                         onSubmit={async (e) => {
                         e.preventDefault();
-                        await sendChat({ body: newChatText, author: "Fes" });
+                        await sendChat({ body: newChatText, author: "You" });
                         setNewChatText("");
                         }}
                     >

@@ -36,9 +36,9 @@ export const chat = action({
         const messageContent = response.choices[0].message?.content;
 
         // Send the message to the chat
-        await ctx.runMutation(api.messages.send, { 
+        await ctx.runMutation(api.chats.send, { 
             body: messageContent || "Sorry, I don't have an answer for that.",
-            author: "ChatGPT" 
+            author: "RaphaAI" 
         });
       },
 })

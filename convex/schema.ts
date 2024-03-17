@@ -50,8 +50,9 @@ export default defineSchema({
     body: v.string(),
   }),
   messages: defineTable({
-    author: v.string(),
     body: v.string(),
+    patientId: v.any(),
+    doctorId: v.any(),
   }),
   allergyDetails: defineTable({
     patientId: v.any(),

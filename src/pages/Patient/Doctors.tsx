@@ -22,7 +22,9 @@ const Doctors: React.FC = () => {
   const [popupOpenMap, setPopupOpenMap] = useState<{ [key: number]: boolean }>({});
 
   const trigger = useRef<HTMLButtonElement | null>(null);
-  const popup = useRef<HTMLDivElement | null>(null); 
+  const popup = useRef<HTMLDivElement | null>(null);
+  
+  const userId = localStorage.getItem("userId");
 
   const togglePopup = (doctorId: string) => {
     setPopupOpenMap((prevMap) => ({
@@ -131,7 +133,7 @@ const Doctors: React.FC = () => {
                             // onClick={() =>  togglePop(doctor.recordId)}  
                             onClick={() => {
                               // fetchPatientProfile(doctor.sender);
-                              navigate(`/chat?did=${doctor.sender}&name=${doctor.name}`)}}                   
+                              navigate(`/chat?doctorId=${doctor._id}&name=${doctor.name}`)}}                   
                             className="inline-flex items-center justify-center rounded-full bg-primary py-3 px-10 text-center font-medium text-white hover:bg-opacity-90 lg:px-8 xl:px-10"
                             >
                             Consult

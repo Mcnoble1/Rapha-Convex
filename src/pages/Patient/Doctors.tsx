@@ -22,8 +22,18 @@ const Doctors: React.FC = () => {
 
   const trigger = useRef<HTMLButtonElement | null>(null);
   const popup = useRef<HTMLDivElement | null>(null);
+
+  let name: string, patientId: any, dateOfBirth: string;
   
   const userId = localStorage.getItem("userId");
+
+  const fetchPatient = useQuery(api.patients.getPatient, { _id: userId });
+
+  fetchPatient?.map((patient: any) => {
+    name = patient.name;
+    patientId = patient._id;
+    dateOfBirth = patient.dateOfBirth;
+  });
 
   const togglePopup = (doctorId: string) => {
     setPopupOpenMap((prevMap) => ({
@@ -41,7 +51,7 @@ const Doctors: React.FC = () => {
 
 
   const doctors = useQuery(api.doctors.getDoctors);
-  const sendPatientId = useMutation(api.patients.sendPatientId);
+  const sendPatientDetails = useMutation(api.patients.sendPatientDetails);
 
   return (
     <div className="dark:bg-boxdark-2 dark:text-bodydark">
@@ -70,9 +80,9 @@ const Doctors: React.FC = () => {
                 </div>   
               </div>
 
-              <div className="flex flex-row gap-10 ">
+              <div className="flex flex-row flex-wrap gap-10 ">
                     {doctors?.map((doctor: any, index: any) => (
-                      <div className=" lg:w-2/5 rounded-2xl bg-white px-5 shadow-default dark:border-strokedark dark:bg-boxdark ">
+                      <div className="lg:w-2/5 rounded-2xl bg-white px-5 shadow-default dark:border-strokedark dark:bg-boxdark ">
                         <div className="" key={index}>
                         <div className='flex flex-row mb-1 gap-20 p-5 w-full'>
                           <div className="flex">
@@ -129,7 +139,7 @@ const Doctors: React.FC = () => {
                         {doctor.status === 'Verified' ? (
                           <button
                             onClick={() => {
-                              sendPatientId({ patientId: userId });
+                              sendPatientDetails({ patientId: patientId, doctorId: doctor._id, patientName: name, dateOfBirth: dateOfBirth });
                               navigate(`/chat?doctorId=${doctor._id}&name=${doctor.name}`)}}                   
                             className="inline-flex items-center justify-center rounded-full bg-primary py-3 px-10 text-center font-medium text-white hover:bg-opacity-90 lg:px-8 xl:px-10"
                             >

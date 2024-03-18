@@ -7,8 +7,6 @@ import PatientImage from '../images/user/4.png';
 
 const PatientsTable: React.FC = () => {
 
-  let fetchPatient;
-
   const navigate = useNavigate();
 
   const [patientsDetails, setPatientsDetails] = useState<Patient[]>([]);
@@ -19,21 +17,8 @@ const PatientsTable: React.FC = () => {
 
   const userId = localStorage.getItem("userId");
 
-
-
-  const fetchPatientsIds = useQuery(api.doctors.getPatientsId);
-
-  console.log(fetchPatientsIds);
-  const patientIds = fetchPatientsIds?.map(e => e.patientId);
-  console.log(patientIds);
+  const fetchPatients = useQuery(api.doctors.getPatients, { doctorId: userId});
   
-  for (let i = 0; i < patientIds?.length; i++) {
-    console.log(patientIds[i]);
-    fetchPatient = useQuery(api.patients.getPatient, { _id: patientIds[i] });
-    console.log(fetchPatient);
-   }
-
-
   const formatAge = (dateOfBirth) => {
     const today = new Date();
     const birthDate = new Date(dateOfBirth);
@@ -67,7 +52,7 @@ const PatientsTable: React.FC = () => {
     let filteredData = [...patientsDetails];
     // map over the patientsDetails and filter using the names of the patients
     if (option !== '') {
-    filteredData = filteredData.filter((patient) => patient.name === option);
+    filteredData = filteredData.filter((patient) => patient.patientName === option);
     } else {
       // fetchHealthDetails();
     }
@@ -134,15 +119,15 @@ const PatientsTable: React.FC = () => {
             <div className="absolute top-12 left-0 bg-white border border-stroke rounded-b-sm shadow-lg dark:bg-boxdark">
               <ul className="py-2">
                 {/* map over the patientsDetails and list the patient names as dropdown options */}
-                {fetchPatient?.map((patient) => (
+                {fetchPatients?.map((patient) => (
                   <li
                     key={patient._id}
-                    onClick={() => handleFilter(patient.name)}
+                    onClick={() => handleFilter(patient.patientName)}
                     className={`cursor-pointer px-4 py-2 ${
-                      filterOption === patient.name ? 'bg-primary text-white' : ''
+                      filterOption === patient.patientName ? 'bg-primary text-white' : ''
                     }`}
                   >
-                    {patient.name}
+                    {patient.patientName}
                   </li>
                 ))}
                 {/* add more options here */}
@@ -174,25 +159,25 @@ const PatientsTable: React.FC = () => {
           </thead>
           <tbody>
             {/* Table body */}
-            {fetchPatient?.map((patient, index) => (
+            {fetchPatients?.map((patient, index) => (
               <tr key={patient._id} className={`border-b border-stroke dark:border-strokedark ${index === 0 ? 'rounded-t-sm' : ''}`}>
                 <td className="p-2.5 xl:p-5">
                   <div className="flex gap-3">
                     <div className="flex-shrink-0 ">
                       <img
                         src={PatientImage}
-                        alt={patient.name}
+                        alt={patient.patientName}
                         className="h-12 w-12 rounded-full" // Add a class to control the image size
                       />
                     </div>
                   </div>
                 </td>                
-                <td className="p-2.5 xl:p-5 ">{patient.name}</td>              
+                <td className="p-2.5 xl:p-5 ">{patient.patientName}</td>              
                 <td className="p-2.5 xl:p-5 ">{formatAge(patient.dateOfBirth)}</td>
                 <td className="p-2.5 xl:p-5 ">
                   <div className="flex flex-row gap-4">
                   <button 
-                        onClick={() =>  navigate(`/chat?patientId=${patient._id}&name=${patient.name}`)}               
+                        onClick={() =>  navigate(`/chat?patientId=${patient.patientId}&name=${patient.patientName}`)}               
                         className="rounded bg-primary py-2 px-3 text-white hover:bg-opacity-90">
                       Chat
                     </button>

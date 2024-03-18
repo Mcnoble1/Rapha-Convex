@@ -47,6 +47,9 @@ export default defineSchema({
   }),
   consultation: defineTable({
     patientId: v.any(),
+    doctorId: v.any(),
+    patientName: v.string(),
+    dateOfBirth: v.string(),
   }),
   chats: defineTable({
     author: v.string(),

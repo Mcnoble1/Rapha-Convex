@@ -75,10 +75,12 @@ export const deleteDoctor = mutation({
     },
 });
 
-export const getPatientsId = query({
-    args: {},
-    handler: async (ctx) => {
-        const patientIds = await ctx.db.query("consultation").collect();
-        return patientIds;
+export const getPatients = query({
+    args: { doctorId: v.any()},
+    handler: async (ctx, args) => {
+        const patients = await ctx.db.query("consultation")
+        .filter((q) => q.eq(q.field("doctorId"), args.doctorId))
+        .collect();
+        return patients;
     },
 })

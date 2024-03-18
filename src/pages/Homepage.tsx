@@ -45,7 +45,7 @@ const Homepage = () => {
             Welcome to Rapha
           </p>
        
-          <span className="text-3xl lg:text-4xl font-medium">All Encompassing Decentralized Healthcare Platform</span>
+          <span className="text-3xl lg:text-4xl font-medium">All Encompassing Healthcare Platform</span>
           </div>
           <div className="flex justify-center">
           <button 
@@ -97,42 +97,22 @@ const Homepage = () => {
             What we offer
         </div>
         <div className="flex w-[90%] mx-[5%] flex-col lg:flex-row  flex-wrap">   
-          <div className="flex flex-col mb-10 lg:w-1/3">
-            <img src={one} alt="one" className="text-white mb-10 dark:text-white"/>
+          <div className="flex flex-col lg:w-1/3">
+          <img src={two} alt="one" className="text-white mb-30 dark:text-white"/>
             <p className="text-center text-2xl  font-bold">
-            Create and save your Health records in your personal Decentralized Web Node (DWN).
-            
-            </p>            
-          </div>
-          <div className="flex flex-col mb-10 lg:w-1/3">
-          <img src={two} alt="one" className="text-white mb-10 dark:text-white"/>
-            <p className="text-center text-2xl  font-bold">
-            Save your files (Documents, Images, Videos) in your personal Decentralized Web Node (DWN).
-            
+            Consult with a medical practitioners from the comfort of your home.
             </p>
           </div>
           <div className="flex flex-col lg:w-1/3">
-          <img src={three} alt="one" className="text-white mb-10 dark:text-white"/>
+          <img src={four} alt="one" className="text-white mb-10 dark:text-white"/>
             <p className="text-center text-2xl  font-bold">
-            Write Letters into the Future to yourself and others.
-            </p>  
-          </div>
-          <div className="flex flex-col mb-10 lg:w-1/3">
-            <img src={four} alt="one" className="text-white mb-10 dark:text-white"/>
-            <p className="text-center text-2xl  font-bold">
-            Create and save your Health records in your personal Decentralized Web Node (DWN).
-            </p>            
-          </div>
-          <div className="flex flex-col mb-10 lg:w-1/3">
-          <img src={five} alt="one" className="text-white mb-10 dark:text-white"/>
-            <p className="text-center text-2xl  font-bold">
-            Save your files (Documents, Images, Videos) in your personal Decentralized Web Node (DWN).
+             Readily available Electronic Health Record.
             </p>
           </div>
           <div className="flex flex-col lg:w-1/3">
           <img src={six} alt="one" className="text-white mb-10 dark:text-white"/>
             <p className="text-center text-2xl  font-bold">
-            Write Letters into the Future to yourself and others.
+            RaphaAI: Personal Healthcare Assistant.
             </p>  
           </div>
         </div>

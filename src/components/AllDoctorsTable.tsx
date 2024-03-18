@@ -19,15 +19,31 @@ const DoctorsTable: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [popupOpenMap, setPopupOpenMap] = useState<{ [key: number]: boolean }>({});
   const [issueVCOpenMap, setIssueVCOpenMap] = useState<{ [key: number]: boolean }>({});
-  const [vcData, setVcData] = useState<{ status: string }>({
-    status: "",
+  const [docData, setDocData] = useState<{ name: string; yearsOfExperience: string; status: string; dateOfBirth: string; phone: string; hospital: string; specialty: string; identificationNumber: string; registrationNumber: string; gender: string; homeAddress: string; email: string; city: string; state: string; country: string; }>({
+    name: '',
+    dateOfBirth: '',
+    hospital: '',
+    specialty: '',
+    registrationNumber: '',
+    identificationNumber: '',
+    yearsOfExperience: '',
+    gender: '',
+    homeAddress: '',
+    email: '',
+    status: 'Unverified',
+    city: '',
+    state: '',
+    country: '',
+    phone: '',
   });
 
   const trigger = useRef<HTMLButtonElement | null>(null);
   const popup = useRef<HTMLDivElement | null>(null); 
 
-  const togglePopup = (doctorId: string) => {
-    setPopupOpenMap((prevMap) => ({
+  const togglePopup = (doctorId: any) => {
+    const doc = doctors?.filter((doctor) => doctor._id === doctorId);
+    setDocData({ name: doc[0].name, dateOfBirth: doc[0].dateOfBirth, email: doc[0].email, phone: doc[0].phone, hospital: doc[0].hospital, specialty: doc[0].specialty, registrationNumber: doc[0].registrationNumber, identificationNumber: doc[0].identificationNumber, yearsOfExperience: doc[0].yearsOfExperience, gender: doc[0].gender, homeAddress: doc[0].homeAddress, status: doc[0].status, city: doc[0].city, state: doc[0].state, country: doc[0].country });
+        setPopupOpenMap((prevMap) => ({
       ...prevMap,
       [doctorId]: !prevMap[doctorId],
     }));
@@ -56,8 +72,7 @@ setIssueVCOpenMap((prevMap) => ({
 
 
 const doctors = useQuery(api.doctors.getDoctors);
-const updateDoctor = useMutation(api.doctors.updateDoctor, { doctorId, ...data, licenseStatus });
-
+const updateDoctor = useMutation(api.doctors.updateDoctor);
 
 const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
   const { name, value } = e.target;
@@ -71,30 +86,17 @@ const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>)
   //   }
   // }
 
-  setVcData((prevFormData) => ({
+  setDocData((prevFormData) => ({
     ...prevFormData,
     [name]: value,
   }));
 };
 
-// const doctorDid = doctorsDetails.map((doctor) => doctor.sender);
-// console.log(doctorDid);
+  const verifyDoctor = async (recordId: any) => {
 
-const verifyDoctor = async (recordId: any) => {
+    await updateDoctor({ id: recordId, name: docData.name, dateOfBirth: docData.dateOfBirth, email: docData.email, phone: docData.phone, hospital: docData.hospital, specialty: docData.specialty, registrationNumber: docData.registrationNumber, identificationNumber: docData.identificationNumber, yearsOfExperience: docData.yearsOfExperience, gender: docData.gender, homeAddress: docData.homeAddress, status: "Verified", city: docData.city, state: docData.state, country: docData.country });
 
-    setVcData({
-      status: "",
-    });
-
-    console.log(doctors);
-
-    doctors.filter((doctor) => doctor._id === recordId)[0].status = 'Verified';
-
-    console.log(doctors)
-
-    updateDoctor(recordId, {});
-
-};
+  }
 
 const showRevokeConfirmation = (doctorId: string) => {
     setDoctorToRevokeId(doctorId);
@@ -226,7 +228,7 @@ const showRevokeConfirmation = (doctorId: string) => {
                      {isRevokeConfirmationVisible && (
                       <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-20">
                         <div className="bg-white p-5 rounded-lg shadow-md">
-                          <p>Are you sure you want to revoke the credential?</p>
+                          <p>Are you sure you want to revoke the license status?</p>
                           <div className="mt-4 flex justify-end">
                             <button
                               onClick={hideRevokeConfirmation}
@@ -429,10 +431,10 @@ const showRevokeConfirmation = (doctorId: string) => {
                                                       <label className="mb-2.5 block text-black dark:text-white">
                                                         License Status
                                                       </label>
-                                                      <div className={`relative ${vcData.specialty ? 'bg-light-blue' : ''}`}>
+                                                      <div className={`relative ${docData.status ? 'bg-light-blue' : ''}`}>
                                                       <select
-                                                          name="specialty"
-                                                          value={vcData.specialty}
+                                                          name="status"
+                                                          value={docData.status}
                                                           onChange={handleInputChange}
                                                           required
                                                           className="w-full rounded-lg border-[1.5px] border-stroke bg-transparent py-2 px-5 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus-border-primary">
@@ -449,7 +451,11 @@ const showRevokeConfirmation = (doctorId: string) => {
                                                   </form>
                                                 <button
                                                   type="button"
-                                                  onClick={() => verifyDoctor(doctor._id)}
+                                                  onClick={() => { 
+                                                    verifyDoctor(doctor._id);
+                                                    closePop(doctor._id);
+                                                    
+                                                  }}
                                                   disabled={updateLoading}
                                                   className={`mr-5 mb-5 inline-flex items-center justify-center gap-2.5 rounded-full bg-primary py-4 px-10 text-center font-medium text-white hover:bg-opacity-90 lg:px-8 xl:px-10 ${updateLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                                                 >
@@ -462,6 +468,7 @@ const showRevokeConfirmation = (doctorId: string) => {
                                                     <>Verify</>
                                                   )}
                                                 </button>
+                                                
                                                 </div>
                                             </div>
                                           )}

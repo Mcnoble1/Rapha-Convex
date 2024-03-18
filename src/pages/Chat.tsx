@@ -61,7 +61,8 @@ export default function Home() {
                 <div>
                   {userType === 'patient' ? (
                     <button 
-                    className="inline-flex mr-5 items-center justify-center rounded-full bg-primary py-3 px-10 text-center font-medium text-white hover:bg-opacity-90 lg:px-8 xl:px-10">
+                    // className="inline-flex mr-5 items-center justify-center rounded-full bg-primary py-3 px-10 text-center font-medium text-white hover:bg-opacity-90 lg:px-8 xl:px-10"
+                    >
                       {/* Share Record */}
                   </button>
                   ) : (

@@ -252,14 +252,6 @@ const DiagnosisDetails = (props) => {
           )}
 
           <button
-           ref={trigger}
-           onClick={() => setSharePopupOpen(!sharePopupOpen)}
-            className=""
-          >
-            <FontAwesomeIcon icon={faShare} />
-          </button>
-
-          <button
             onClick={() => setCardOpen(!isCardOpen)}
             className=""
           >

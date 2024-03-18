@@ -85,11 +85,19 @@ export const deletePatient = mutation({
     },
 });
 
-export const sendPatientId = mutation({
-    args: { patientId: v.any() },
+export const sendPatientDetails = mutation({
+    args: { patientId: v.any(), doctorId: v.any(), patientName: v.string(), dateOfBirth: v.string()},
     handler: async (ctx, args) => {
-        const { patientId } = args;
-        const Id = await ctx.db.insert("consultation", { patientId });
-        return Id;
+        const { patientId, patientName, doctorId, dateOfBirth } = args;
+        const existingRecord = await ctx.db.query("consultation")
+            .filter((q) => q.and(
+                q.eq(q.field("patientId"), patientId),
+                q.eq(q.field("doctorId"), doctorId)
+            ))
+            .collect();
+        if (existingRecord.length === 0) {
+            const details = await ctx.db.insert("consultation", { patientId, doctorId, patientName, dateOfBirth });
+            return details;
+        }
     },
 });

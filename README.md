@@ -4,7 +4,9 @@ Centralized Healthcare Platform
 The inspiration behind Rapha came from recognizing the need for a more efficient and accessible healthcare system. We observed the challenges people face in accessing timely medical consultations and managing their health records. Rapha aims to bridge these gaps by providing a seamless platform for connecting patients with medical practitioners and offering a comprehensive electronic health record system.
 
 ## Demo Video
-https://github.com/Mcnoble1/Rapha/assets/40045755/eacbe375-6739-4f99-9431-37b474e0491f
+https://github.com/Mcnoble1/Rapha-Convex/assets/40045755/394853d6-b121-4bf0-9f71-7782b1350054
+
+
 
 ## What it does
 Rapha serves as a comprehensive healthcare platform that connects users with medical practitioners for consultations. It offers an electronic health record system where verified doctors can securely access and update patient records. Additionally, Rapha features a personal healthcare AI assistant, RaphaAI, to provide users with personalized health insights and assistance.

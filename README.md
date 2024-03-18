@@ -78,5 +78,8 @@ Default build output directory: /dist
 
 This command will generate a dist as build folder in the root of your template that you can upload to your server.
 
-![download](https://github.com/Mcnoble1/Rapha/assets/40045755/db26d9a9-0622-4cd6-9bde-4552a1da96c0)
-![images](https://github.com/Mcnoble1/Rapha/assets/40045755/ef8b1d47-11d3-4ad2-a315-40dae0d6b3fb)
+![conv](https://github.com/Mcnoble1/Rapha-Convex/assets/40045755/62868231-f7dc-48ae-8cf6-bf918cb7602d)
+
+<img width="536" alt="zero" src="https://github.com/Mcnoble1/Rapha-Convex/assets/40045755/8b8e8f66-aebd-49db-9eb5-d2f8728a97cd">
+
+

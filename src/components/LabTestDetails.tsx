@@ -7,10 +7,8 @@ import '../pages/signin.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus, faShare, faAngleDown } from '@fortawesome/free-solid-svg-icons';
 
-const LabTestDetails = () => {
+const LabTestDetails = (props) => {
   
-  // const { web5, myDid, profileProtocolDefinition, userType } = useContext( Web5Context);
-
   const [isCardOpen, setCardOpen] = useState(false);
   const [popupOpen, setPopupOpen] = useState(false);
   const [sharePopupOpen, setSharePopupOpen] = useState(false);
@@ -29,16 +27,17 @@ const LabTestDetails = () => {
     patientId: '',
   }); 
 
-  const userId = localStorage.getItem("userId");
   const userType = localStorage.getItem("userType");
 
-  const getLabTest = useQuery(api.healthRecord.getLabTestDetails, { patientId: userId });
+  const patientId = props.patientId;
+
+  const getLabTest = useQuery(api.healthRecord.getLabTestDetails, { patientId: patientId });
   const createLabTest = useMutation(api.healthRecord.createLabTestDetails);
   // const updateLabTest = useMutation(api.healthRecord.updateLabTestDetails);
   const deleteLabTest = useMutation(api.healthRecord.deleteLabTestDetails);
 
-  const showDeleteConfirmation = (userId: string) => {
-    setUserToDeleteId(userId);
+  const showDeleteConfirmation = (patientId: string) => {
+    setUserToDeleteId(patientId);
     setDeleteConfirmationVisible(true);
   };
 
@@ -108,7 +107,7 @@ const LabTestDetails = () => {
     setLoading(false);
   
     try {
-     await createLabTest({ ...labTestData, patientId: userId });
+     await createLabTest({ ...labTestData, patientId: patientId });
 
       setLabTestData({
         test: '',
@@ -134,9 +133,9 @@ const LabTestDetails = () => {
       } 
   };
 
-  const deleteLabTestDetails = async (userId: any) => {
+  const deleteLabTestDetails = async (patientId: any) => {
     try {
-      await deleteLabTest({ id: userId});
+      await deleteLabTest({ id: patientId});
       toast.success('Successfully deleted record', {
         position: toast.POSITION.TOP_RIGHT,
         autoClose: 3000, 
@@ -163,7 +162,7 @@ const LabTestDetails = () => {
           LabTest Information
         </div>
         <div className="flex flex-row mb-5 items-center gap-10 justify-end">
-        {userType === 'patient' && (
+        {userType === 'doctor' && (
             <>
           <button
             ref={trigger}
@@ -322,7 +321,7 @@ const LabTestDetails = () => {
               </h4>
             </div>
 
-            {userType === 'patient' && (
+            {userType === 'doctor' && (
             <>
             <button
                 onClick={() => showDeleteConfirmation(user._id)}

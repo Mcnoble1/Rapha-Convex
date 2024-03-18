@@ -6,7 +6,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import '../pages/signin.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus, faShare, faAngleDown } from '@fortawesome/free-solid-svg-icons';
-const AllergyDetails = () => {
+const AllergyDetails = (props) => {
   
   const [isCardOpen, setCardOpen] = useState(false);
   const [popupOpen, setPopupOpen] = useState(false);
@@ -26,16 +26,17 @@ const AllergyDetails = () => {
     patientId: '',
   }); 
 
-  const userId = localStorage.getItem("userId");
   const userType = localStorage.getItem("userType");
 
-  const getAllergy = useQuery(api.healthRecord.getAllergyDetails, { patientId: userId });
+  const patientId = props.patientId;
+
+  const getAllergy = useQuery(api.healthRecord.getAllergyDetails, { patientId: patientId });
   const createAllergy = useMutation(api.healthRecord.createAllergyDetails);
   // const updateAllergy = useMutation(api.healthRecord.updateAllergyDetails);
   const deleteAllergy = useMutation(api.healthRecord.deleteAllergyDetails);
 
-  const showDeleteConfirmation = (userId: string) => {
-    setUserToDeleteId(userId);
+  const showDeleteConfirmation = (patientId: string) => {
+    setUserToDeleteId(patientId);
     setDeleteConfirmationVisible(true);
   };
 
@@ -103,7 +104,7 @@ const AllergyDetails = () => {
     allergydata.append("treatment", allergyData.treatment);
   
     try {
-      await createAllergy({ ...allergyData, patientId: userId });
+      await createAllergy({ ...allergyData, patientId: patientId });
       
       setAllergyData({
         name: '',
@@ -128,9 +129,9 @@ const AllergyDetails = () => {
       } 
   };
 
-  const deleteAllergyDetails = async (userId: any) => {
+  const deleteAllergyDetails = async (patientId: any) => {
     try {
-      await deleteAllergy({ id: userId});
+      await deleteAllergy({ id: patientId});
       toast.success('Successfully deleted record', {
         position: toast.POSITION.TOP_RIGHT,
         autoClose: 3000, 
@@ -159,7 +160,7 @@ const AllergyDetails = () => {
           Allergy Information
         </div>
         <div className="flex flex-row mb-5 items-center gap-10 justify-end">
-        {userType === 'patient' && (
+        {userType === 'doctor' && (
             <>
           <button
             ref={trigger}
@@ -341,7 +342,7 @@ const AllergyDetails = () => {
               </h4>
             </div>
 
-            {userType === 'patient' && (
+            {userType === 'doctor' && (
             <>
             <button
                 onClick={() => showDeleteConfirmation(user._id)}

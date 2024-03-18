@@ -1,17 +1,17 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import { toast } from 'react-toastify'; 
 import { useNavigate } from 'react-router-dom';
 import 'react-toastify/dist/ReactToastify.css'; 
 import PatientImage from '../images/user/4.png';
 
 const PatientsTable: React.FC = () => {
 
+  let fetchPatient;
+
   const navigate = useNavigate();
 
   const [patientsDetails, setPatientsDetails] = useState<Patient[]>([]);
-  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [sortDropdownVisible, setSortDropdownVisible] = useState(false);
   const [filterDropdownVisible, setFilterDropdownVisible] = useState(false);
   const [sortOption, setSortOption] = useState<string>(''); 
@@ -19,7 +19,20 @@ const PatientsTable: React.FC = () => {
 
   const userId = localStorage.getItem("userId");
 
-  const fetchPatient = useQuery(api.patients.getPatient, { _id: userId });
+
+
+  const fetchPatientsIds = useQuery(api.doctors.getPatientsId);
+
+  console.log(fetchPatientsIds);
+  const patientIds = fetchPatientsIds?.map(e => e.patientId);
+  console.log(patientIds);
+  
+  for (let i = 0; i < patientIds?.length; i++) {
+    console.log(patientIds[i]);
+    fetchPatient = useQuery(api.patients.getPatient, { _id: patientIds[i] });
+    console.log(fetchPatient);
+   }
+
 
   const formatAge = (dateOfBirth) => {
     const today = new Date();
@@ -121,9 +134,9 @@ const PatientsTable: React.FC = () => {
             <div className="absolute top-12 left-0 bg-white border border-stroke rounded-b-sm shadow-lg dark:bg-boxdark">
               <ul className="py-2">
                 {/* map over the patientsDetails and list the patient names as dropdown options */}
-                {patientsDetails.map((patient) => (
+                {fetchPatient?.map((patient) => (
                   <li
-                    key={patient.recordId}
+                    key={patient._id}
                     onClick={() => handleFilter(patient.name)}
                     className={`cursor-pointer px-4 py-2 ${
                       filterOption === patient.name ? 'bg-primary text-white' : ''
@@ -161,8 +174,8 @@ const PatientsTable: React.FC = () => {
           </thead>
           <tbody>
             {/* Table body */}
-            {patientsDetails.map((patient, index) => (
-              <tr key={patient.recordId} className={`border-b border-stroke dark:border-strokedark ${index === 0 ? 'rounded-t-sm' : ''}`}>
+            {fetchPatient?.map((patient, index) => (
+              <tr key={patient._id} className={`border-b border-stroke dark:border-strokedark ${index === 0 ? 'rounded-t-sm' : ''}`}>
                 <td className="p-2.5 xl:p-5">
                   <div className="flex gap-3">
                     <div className="flex-shrink-0 ">
@@ -179,16 +192,11 @@ const PatientsTable: React.FC = () => {
                 <td className="p-2.5 xl:p-5 ">
                   <div className="flex flex-row gap-4">
                   <button 
-                        // onClick={() => navigate('/doctor/patient/:id')}
-                        onClick={() =>  navigate(`/chat?did=${patient.sender}&name=${patient.name}`)}               
+                        onClick={() =>  navigate(`/chat?patientId=${patient._id}&name=${patient.name}`)}               
                         className="rounded bg-primary py-2 px-3 text-white hover:bg-opacity-90">
                       Chat
                     </button>
-                    <button 
-                        onClick={() => deleteHealthDetails(patient.recordId)}                      
-                        className="rounded bg-danger py-2 px-3 text-white hover:bg-opacity-90">
-                      Delete
-                    </button>
+
                   </div>
                 </td>
               </tr>

@@ -29,16 +29,17 @@ const ImmunizationDetails = (props) => {
     patientId: '',
   }); 
 
-  const userId = localStorage.getItem("userId");
   const userType = localStorage.getItem("userType");
 
-  const getImmunization = useQuery(api.healthRecord.getImmunizationDetails, { patientId: userId });
+  const patientId = props.patientId;
+
+  const getImmunization = useQuery(api.healthRecord.getImmunizationDetails, { patientId: patientId });
   const createImmunization = useMutation(api.healthRecord.createImmunizationDetails);
   // const updateImmunization = useMutation(api.healthRecord.updateImmunizationDetails);
   const deleteImmunization = useMutation(api.healthRecord.deleteImmunizationDetails);
 
-  const showDeleteConfirmation = (userId: string) => {
-    setUserToDeleteId(userId);
+  const showDeleteConfirmation = (patientId: string) => {
+    setUserToDeleteId(patientId);
     setDeleteConfirmationVisible(true);
   };
 
@@ -107,7 +108,7 @@ const ImmunizationDetails = (props) => {
     immunizationdata.append('nextScheduled', immunizationData.nextScheduled);
   
     try {
-      await createImmunization({ ...immunizationData, patientId: userId })
+      await createImmunization({ ...immunizationData, patientId: patientId })
       
       setImmunizationData({
         vaccineName: '',
@@ -135,9 +136,9 @@ const ImmunizationDetails = (props) => {
       } 
   };
 
-  const deleteImmunizationDetails = async (userId: any) => {
+  const deleteImmunizationDetails = async (patientId: any) => {
     try {
-      await deleteImmunization({ id: userId});
+      await deleteImmunization({ id: patientId});
       toast.success('Successfully deleted record', {
         position: toast.POSITION.TOP_RIGHT,
         autoClose: 3000, 
@@ -164,7 +165,7 @@ const ImmunizationDetails = (props) => {
           Immunization Information
         </div>
         <div className="flex flex-row mb-5 items-center gap-10 justify-end">
-        {userType === 'patient' && (
+        {userType === 'doctor' && (
             <>
           <button
             ref={trigger}
@@ -362,7 +363,7 @@ const ImmunizationDetails = (props) => {
               </h4>
             </div>
 
-            {userType === 'patient' && (
+            {userType === 'doctor' && (
             <>
             <button
                 onClick={() => showDeleteConfirmation(user._id)}

@@ -7,7 +7,7 @@ import '../pages/signin.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus, faShare, faAngleDown } from '@fortawesome/free-solid-svg-icons';
 
-const SurgeryDetails = () => {
+const SurgeryDetails = (props) => {
   
   const [isCardOpen, setCardOpen] = useState(false);
   const [popupOpen, setPopupOpen] = useState(false);
@@ -26,16 +26,17 @@ const SurgeryDetails = () => {
     status: '',
   }); 
 
-  const userId = localStorage.getItem("userId");
   const userType = localStorage.getItem("userType");
 
-  const getSurgery = useQuery(api.healthRecord.getSurgeryDetails, { patientId: userId });
+  const patientId = props.patientId;
+
+  const getSurgery = useQuery(api.healthRecord.getSurgeryDetails, { patientId: patientId });
   const createSurgery = useMutation(api.healthRecord.createSurgeryDetails);
   // const updateSurgery = useMutation(api.healthRecord.updateSurgeryDetails);
   const deleteSurgery = useMutation(api.healthRecord.deleteSurgeryDetails);
 
-  const showDeleteConfirmation = (userId: string) => {
-    setUserToDeleteId(userId);
+  const showDeleteConfirmation = (patientId: string) => {
+    setUserToDeleteId(patientId);
     setDeleteConfirmationVisible(true);
   };
 
@@ -104,7 +105,7 @@ const SurgeryDetails = () => {
     setLoading(false);
   
     try {
-      await createSurgery({ ...surgeryData, patientId: userId })
+      await createSurgery({ ...surgeryData, patientId: patientId })
   
       setSurgeryData({
         surgery: '',
@@ -130,9 +131,9 @@ const SurgeryDetails = () => {
       } 
   };
 
-  const deleteSurgeryDetails = async (userId: any) => {
+  const deleteSurgeryDetails = async (patientId: any) => {
     try {
-      await deleteSurgery({ id: userId});
+      await deleteSurgery({ id: patientId});
       toast.success('Successfully deleted record', {
         position: toast.POSITION.TOP_RIGHT,
         autoClose: 3000, 
@@ -160,7 +161,7 @@ const SurgeryDetails = () => {
           Surgery Information
         </div>
         <div className="flex flex-row mb-5 items-center gap-10 justify-end">
-        {userType === 'patient' && (
+        {userType === 'doctor' && (
             <>
           <button
             ref={trigger}
@@ -319,7 +320,7 @@ const SurgeryDetails = () => {
               </h4>
             </div>
 
-            {userType === 'patient' && (
+            {userType === 'doctor' && (
             <>
             <button
                 onClick={() => showDeleteConfirmation(user._id)}

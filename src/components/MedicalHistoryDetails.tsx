@@ -7,7 +7,7 @@ import '../pages/signin.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus, faShare, faAngleDown } from '@fortawesome/free-solid-svg-icons';
 
-const MedicalHistoryDetails = () => {
+const MedicalHistoryDetails = (props) => {
   
   const [isCardOpen, setCardOpen] = useState(false);
   const [popupOpen, setPopupOpen] = useState(false);
@@ -27,16 +27,17 @@ const MedicalHistoryDetails = () => {
     medicalCondition: '',
   }); 
 
-  const userId = localStorage.getItem("userId");
   const userType = localStorage.getItem("userType");
 
-  const getMedicalHistory = useQuery(api.healthRecord.getMedicalHistory, { patientId: userId });
+  const patientId = props.patientId;
+
+  const getMedicalHistory = useQuery(api.healthRecord.getMedicalHistory, { patientId: patientId });
   const createMedicalHistory = useMutation(api.healthRecord.createMedicalHistory);
   // const updateMedicalHistory = useMutation(api.healthRecord.updateMedicalHistory);
   const deleteMedicalHistory = useMutation(api.healthRecord.deleteMedicalHistory);
 
-  const showDeleteConfirmation = (userId: string) => {
-    setUserToDeleteId(userId);
+  const showDeleteConfirmation = (patientId: string) => {
+    setUserToDeleteId(patientId);
     setDeleteConfirmationVisible(true);
   };
 
@@ -102,7 +103,7 @@ const MedicalHistoryDetails = () => {
     medicalHistorydata.append('status', medicalHistoryData.status);
   
     try {
-     await createMedicalHistory({ ...medicalHistoryData, patientId: userId })
+     await createMedicalHistory({ ...medicalHistoryData, patientId: patientId })
       setMedicalHistoryData({
         medication: '',
         medicalCondition: '',
@@ -125,9 +126,9 @@ const MedicalHistoryDetails = () => {
       } 
   };
 
-  const deleteMedicalHistoryDetails = async (userId: any) => {
+  const deleteMedicalHistoryDetails = async (patientId: any) => {
     try {
-      await deleteMedicalHistory({ id: userId});
+      await deleteMedicalHistory({ id: patientId});
       toast.success('Successfully deleted record', {
         position: toast.POSITION.TOP_RIGHT,
         autoClose: 3000, 
@@ -154,7 +155,7 @@ const MedicalHistoryDetails = () => {
           MedicalHistory Information
         </div>
         <div className="flex flex-row mb-5 items-center gap-10 justify-end">
-        {userType === 'patient' && (
+        {userType === 'doctor' && (
             <> 
           <button
             ref={trigger}
@@ -310,7 +311,7 @@ const MedicalHistoryDetails = () => {
               </h4>
             </div>
 
-            {userType === 'patient' && (
+            {userType === 'doctor' && (
             <>
             <button
                 onClick={() => showDeleteConfirmation(user._id)}

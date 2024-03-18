@@ -7,7 +7,7 @@ import '../pages/signin.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus, faShare, faAngleDown } from '@fortawesome/free-solid-svg-icons';
 
-const VitalSignsDetails = () => {
+const VitalSignsDetails = (props) => {
   
   const [isCardOpen, setCardOpen] = useState(false);
   const [popupOpen, setPopupOpen] = useState(false);
@@ -28,16 +28,17 @@ const VitalSignsDetails = () => {
     patientId: '',
   }); 
 
-  const userId = localStorage.getItem("userId");
   const userType = localStorage.getItem("userType");
 
-  const getVitalSigns = useQuery(api.healthRecord.getVitalSigns, { patientId: userId });
+  const patientId = props.patientId;
+
+  const getVitalSigns = useQuery(api.healthRecord.getVitalSigns, { patientId: patientId });
   const createVitalSigns = useMutation(api.healthRecord.createVitalSigns);
   // const updateVitalSigns = useMutation(api.healthRecord.updateVitalSigns);
   const deleteVitalSigns = useMutation(api.healthRecord.deleteVitalSigns);
 
-  const showDeleteConfirmation = (userId: string) => {
-    setUserToDeleteId(userId);
+  const showDeleteConfirmation = (patientId: string) => {
+    setUserToDeleteId(patientId);
     setDeleteConfirmationVisible(true);
   };
 
@@ -107,7 +108,7 @@ const VitalSignsDetails = () => {
     setLoading(false);
   
     try {
-      await createVitalSigns({ ...vitalSignsData, patientId: userId });
+      await createVitalSigns({ ...vitalSignsData, patientId: patientId });
   
       setVitalSignsData({
         bloodPressure: '',
@@ -134,9 +135,9 @@ const VitalSignsDetails = () => {
       } 
   };
 
-  const deleteVitalSignsDetails = async (userId: any) => {
+  const deleteVitalSignsDetails = async (patientId: any) => {
     try {
-      await deleteVitalSigns({ id: userId});
+      await deleteVitalSigns({ id: patientId});
       toast.success('Successfully deleted record', {
         position: toast.POSITION.TOP_RIGHT,
         autoClose: 3000, 
@@ -163,7 +164,7 @@ const VitalSignsDetails = () => {
           VitalSigns Information
         </div>
         <div className="flex flex-row mb-5 items-center gap-10 justify-end">
-          {userType === 'patient' && (
+          {userType === 'doctor' && (
             <>
             <button
             ref={trigger}
@@ -345,7 +346,7 @@ const VitalSignsDetails = () => {
               </h4>
             </div>
 
-            {userType === 'patient' && (
+            {userType === 'doctor' && (
             <>
             <button
                 onClick={() => showDeleteConfirmation(user._id)}

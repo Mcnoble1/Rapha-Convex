@@ -1,5 +1,4 @@
-import { useState, useRef, ChangeEvent, FormEvent, useEffect } from 'react';
-import { toast } from 'react-toastify'; 
+import { useState, useRef } from 'react';
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import 'react-toastify/dist/ReactToastify.css'; 
@@ -25,9 +24,19 @@ const HealthDetails = () => {
     setShowDetails((prevShowDetails) => !prevShowDetails);
   };
 
-  const userId = localStorage.getItem("userId");
+  const userType = localStorage.getItem('userType');
 
-  const patient = useQuery(api.patients.getPatient, { _id: userId });
+  let patientId: any;
+  const queryString = window.location.search;
+  const urlParams = new URLSearchParams(queryString);
+
+  if (userType === 'patient') {
+    patientId = localStorage.getItem('userId');
+  } else {
+    patientId = urlParams.get('patientId');
+  }
+
+  const patient = useQuery(api.patients.getPatient, { _id: patientId });
   
 
   return (
@@ -93,31 +102,31 @@ const HealthDetails = () => {
       </div> 
 
       <div className='flex flex-wrap  mb-10 p-5 w-full shadow-2xl rounded-lg'>
-        <AllergyDetails/>
+        <AllergyDetails patientId={patientId}/>
       </div>
       <div className='flex flex-wrap  mb-10 p-5 w-full shadow-2xl rounded-lg'>
-        <CardiologyDetails/>
+        <CardiologyDetails patientId={patientId}/>
       </div>
       <div className='flex flex-wrap  mb-10 p-5 w-full shadow-2xl rounded-lg'>
-        <DiagnosisDetails/>
+        <DiagnosisDetails patientId={patientId}/>
       </div>
       <div className='flex flex-wrap  mb-10 p-5 w-full shadow-2xl rounded-lg'>
-        <ImmunizationDetails/>
+        <ImmunizationDetails patientId={patientId}/>
       </div>
       <div className='flex flex-wrap  mb-10 p-5 w-full shadow-2xl rounded-lg'>
-        <LabTestDetails/>
+        <LabTestDetails patientId={patientId}/>
       </div>
       <div className='flex flex-wrap  mb-10 p-5 w-full shadow-2xl rounded-lg'>
-        <MedicalHistoryDetails/>
+        <MedicalHistoryDetails patientId={patientId}/>
       </div>
       <div className='flex flex-wrap  mb-10 p-5 w-full shadow-2xl rounded-lg'>
-        <SurgeryDetails/>
+        <SurgeryDetails patientId={patientId}/>
       </div>
       <div className='flex flex-wrap  mb-10 p-5 w-full shadow-2xl rounded-lg'>
-        <VitalSignsDetails/>
+        <VitalSignsDetails patientId={patientId}/>
       </div>
       <div className='flex flex-wrap  mb-10 p-5 w-full shadow-2xl rounded-lg'>
-        <PhysicalDetails/>
+        <PhysicalDetails patientId={patientId}/>
       </div>
       </div>
       ))}

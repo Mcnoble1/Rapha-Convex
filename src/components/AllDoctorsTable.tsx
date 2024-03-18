@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect, ChangeEvent } from 'react';
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import { toast } from 'react-toastify'; 
 import 'react-toastify/dist/ReactToastify.css'; 
 import DoctorImage from '../images/user/3.png';
 

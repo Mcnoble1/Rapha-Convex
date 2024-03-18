@@ -84,3 +84,12 @@ export const deletePatient = mutation({
         await ctx.db.delete(args.id);
     },
 });
+
+export const sendPatientId = mutation({
+    args: { patientId: v.any() },
+    handler: async (ctx, args) => {
+        const { patientId } = args;
+        const Id = await ctx.db.insert("consultation", { patientId });
+        return Id;
+    },
+});

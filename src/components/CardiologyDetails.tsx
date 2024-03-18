@@ -7,7 +7,7 @@ import '../pages/signin.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus, faShare, faAngleDown } from '@fortawesome/free-solid-svg-icons';
 
-const CardiologyDetails = () => {
+const CardiologyDetails = (props) => {
 
   const [isCardOpen, setCardOpen] = useState(false);
   const [popupOpen, setPopupOpen] = useState(false);
@@ -29,17 +29,18 @@ const CardiologyDetails = () => {
     hospital: '',
   }); 
 
-  const userId = localStorage.getItem("userId");
   const userType = localStorage.getItem("userType");
 
-  const getCardiology = useQuery(api.healthRecord.getCardiologyDetails, { patientId: userId });
+  const patientId = props.patientId;
+
+  const getCardiology = useQuery(api.healthRecord.getCardiologyDetails, { patientId: patientId });
   const createCardiology = useMutation(api.healthRecord.createCardiologyDetails);
   // const updateCardiology = useMutation(api.healthRecord.updateCardiologyDetails);
   const deleteCardiology = useMutation(api.healthRecord.deleteCardiologyDetails);
 
 
-  const showDeleteConfirmation = (userId: string) => {
-    setUserToDeleteId(userId);
+  const showDeleteConfirmation = (patientId: string) => {
+    setUserToDeleteId(patientId);
     setDeleteConfirmationVisible(true);
   };
 
@@ -110,7 +111,7 @@ const CardiologyDetails = () => {
     setLoading(false);
   
     try {
-      await createCardiology({ ...cardiologyData, patientId: userId })
+      await createCardiology({ ...cardiologyData, patientId: patientId })
   
       setCardiologyData({
         heartCondition: '',
@@ -138,9 +139,9 @@ const CardiologyDetails = () => {
       } 
   };
 
-  const deleteCardiologyDetails = async (userId: any) => {
+  const deleteCardiologyDetails = async (patientId: any) => {
     try {
-      await deleteCardiology({ id: userId});
+      await deleteCardiology({ id: patientId});
       toast.success('Successfully deleted record', {
         position: toast.POSITION.TOP_RIGHT,
         autoClose: 3000, 
@@ -167,7 +168,7 @@ const CardiologyDetails = () => {
           Cardiology Information
         </div>
         <div className="flex flex-row mb-5 items-center gap-10 justify-end">
-          {userType === 'patient' && (
+          {userType === 'doctor' && (
             <>
           <button
             ref={trigger}
@@ -358,7 +359,7 @@ const CardiologyDetails = () => {
               </h4>
             </div>
 
-            {userType === 'patient' && (
+            {userType === 'doctor' && (
             <>
             <button
                 onClick={() => showDeleteConfirmation(user._id)}

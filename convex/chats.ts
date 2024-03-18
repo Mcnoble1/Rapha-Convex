@@ -4,25 +4,26 @@ import { api } from "./_generated/api";
 
 
 export const list = query({
-  args: {},
-  handler: async (ctx) => {
-    // Grab the most recent messages.
-    const messages = await ctx.db.query("chats").order("desc").take(100);
-    // Reverse the list so that it's in a chronological order.
+  args: { userId: v.any()},
+  handler: async (ctx, args) => {
+    const messages = await ctx.db.query("chats")
+    .filter((q) => q.eq(q.field("userId"), args.userId))
+    .order("desc").take(100);
     return messages.reverse();
   },
 });
 
 export const send = mutation({
-  args: { body: v.string(), author: v.string() },
+  args: { body: v.string(), author: v.string(), userId: v.any() },
   handler: async (ctx, args) => {
-    const { body, author } = args;
+    const { body, author, userId } = args;
     // Send a new message.
-    await ctx.db.insert("chats", { body, author });
+    await ctx.db.insert("chats", { body, author, userId });
     // Schedule the chat action to run immediately
     if ( author !== "RaphaAI") {
     await ctx.scheduler.runAfter(0, api.openai.chat, {
     messageBody: body,
+    userId: userId,
     });
     }
   },

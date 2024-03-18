@@ -11,8 +11,9 @@ export default function Home() {
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const userType = localStorage.getItem("userType");
+  const userId = localStorage.getItem("userId");
 
-  const chats = useQuery(api.chats.list);
+  const chats = useQuery(api.chats.list, { userId: userId });
   const sendChat = useMutation(api.chats.send);
 
   const [newChatText, setNewChatText] = useState("");
@@ -60,7 +61,7 @@ export default function Home() {
                         className=""
                         onSubmit={async (e) => {
                         e.preventDefault();
-                        await sendChat({ body: newChatText, author: "You" });
+                        await sendChat({ body: newChatText, author: "You", userId: userId });
                         setNewChatText("");
                         }}
                     >

@@ -12,7 +12,6 @@ import '../signin.css';
 const Doctors: React.FC = () => {
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
 
   const [sortDropdownVisible, setSortDropdownVisible] = useState(false);
   const [filterDropdownVisible, setFilterDropdownVisible] = useState(false);
@@ -42,8 +41,7 @@ const Doctors: React.FC = () => {
 
 
   const doctors = useQuery(api.doctors.getDoctors);
-    // setDoctorsDetails(doctors);
-    // console.log('DoctorList:', doctors);
+  const sendPatientId = useMutation(api.patients.sendPatientId);
 
   return (
     <div className="dark:bg-boxdark-2 dark:text-bodydark">
@@ -130,9 +128,8 @@ const Doctors: React.FC = () => {
 
                         {doctor.status === 'Verified' ? (
                           <button
-                            // onClick={() =>  togglePop(doctor.recordId)}  
                             onClick={() => {
-                              // fetchPatientProfile(doctor.sender);
+                              sendPatientId({ patientId: userId });
                               navigate(`/chat?doctorId=${doctor._id}&name=${doctor.name}`)}}                   
                             className="inline-flex items-center justify-center rounded-full bg-primary py-3 px-10 text-center font-medium text-white hover:bg-opacity-90 lg:px-8 xl:px-10"
                             >

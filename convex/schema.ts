@@ -45,14 +45,19 @@ export default defineSchema({
     country: v.string(),
     phone: v.string(),
   }),
+  consultation: defineTable({
+    patientId: v.any(),
+  }),
   chats: defineTable({
     author: v.string(),
     body: v.string(),
+    userId: v.any(),
   }),
   messages: defineTable({
     body: v.string(),
     patientId: v.any(),
     doctorId: v.any(),
+    author: v.string(),
   }),
   allergyDetails: defineTable({
     patientId: v.any(),

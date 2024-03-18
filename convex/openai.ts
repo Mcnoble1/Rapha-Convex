@@ -8,11 +8,10 @@ import { api } from "./_generated/api";
 const apiKey = process.env.OPENAI_API_KEY;
 const openai = new OpenAI({ apiKey });
 
-
-
 export const chat = action({
     args: { 
-        messageBody: v.string()
+        messageBody: v.string(),
+        userId: v.any(),
      },
      handler: async (ctx, args) => {
         const response = await openai.chat.completions.create({
@@ -38,7 +37,8 @@ export const chat = action({
         // Send the message to the chat
         await ctx.runMutation(api.chats.send, { 
             body: messageContent || "Sorry, I don't have an answer for that.",
-            author: "RaphaAI" 
+            author: "RaphaAI",
+            userId: args.userId,
         });
       },
 })

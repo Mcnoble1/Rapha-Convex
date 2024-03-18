@@ -13,15 +13,21 @@ import './ai.css';
 export default function Home() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const userType = localStorage.getItem('userType');
+  let doctorId: any, patientId: any;
   const navigate = useNavigate();
 
   const queryString = window.location.search;
   const urlParams = new URLSearchParams(queryString);
 
-  const patientId = localStorage.getItem('userId');
-const name = urlParams.get('name')
+  const name = urlParams.get('name')
 
-const doctorId = urlParams.get('doctorId')
+  if (userType === 'patient') {
+    doctorId = urlParams.get('doctorId')
+    patientId = localStorage.getItem('userId');
+  } else {
+    doctorId = localStorage.getItem('userId');
+    patientId = urlParams.get('patientId');
+  }
 
   const messages = useQuery(api.messages.list, { patientId: patientId, doctorId: doctorId });
   const sendMessage = useMutation(api.messages.send);
@@ -55,13 +61,12 @@ const doctorId = urlParams.get('doctorId')
                 <div>
                   {userType === 'patient' ? (
                     <button 
-                    // onClick={() => shareHealthDetails("1")}
                     className="inline-flex mr-5 items-center justify-center rounded-full bg-primary py-3 px-10 text-center font-medium text-white hover:bg-opacity-90 lg:px-8 xl:px-10">
-                      Share Record
+                      {/* Share Record */}
                   </button>
                   ) : (
                     <button 
-                    onClick={() => navigate('/doctor/patient')}                      
+                    onClick={() => navigate('/doctor/patient?patientId=' + patientId)}                      
                     className="inline-flex mr-5 items-center justify-center rounded-full bg-primary py-3 px-10 text-center font-medium text-white hover:bg-opacity-90 lg:px-8 xl:px-10">
                       View Record
                   </button>
@@ -71,7 +76,7 @@ const doctorId = urlParams.get('doctorId')
               <div className="flex flex-col gap-10">
                 
 
-              <div className="h-screen rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark xl:flex">       
+              <div className=" rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark xl:flex">       
                   <div className="flex h-full flex-col border-l border-stroke dark:border-strokedark xl:w-3/4">
                       <div className="sticky flex items-center justify-between border-b border-stroke px-6 py-4.5 dark:border-strokedark">
                         <div className="flex items-center">
@@ -93,27 +98,36 @@ const doctorId = urlParams.get('doctorId')
                       </div>
 
 
-                      <div className="sticky bottom-0 border-t border-stroke bg-white py-5 px-6 dark:border-strokedark dark:bg-boxdark">
+                      <div className=" chat ">
                           {messages?.map((message) => (
                             <article
                             key={message._id}
-                            className={message.patientId === patientId ? "message-mine" : ""}
+                            className={message.author === "patient" ? "message-mine" : ""}
                             >
-                            <div>{message.patientId}</div>
+                            <div>{message.author}</div>
 
                             <p>
                                 {message.body}
                             </p>
                             </article>
                         ))}
-                        <form className="flex items-center justify-between space-x-4.5"
-                            onSubmit={async (e) => {
-                              e.preventDefault();
-                              await sendMessage({ body: noteValue, patientId: patientId, doctorId: doctorId});
+                        <form
+                          className="flex items-center justify-between space-x-4.5"
+                          onSubmit={async (e) => {
+                            e.preventDefault();
+                            if (userType !== null) {
+                              await sendMessage({
+                                body: noteValue,
+                                author: userType,
+                                patientId: patientId,
+                                doctorId: doctorId,
+                              });
                               setNoteValue("");
-                              }}>
+                            }
+                          }}
+                        >
                             <div className="relative w-full">
-                              <input 
+                              <input  
                                 type="text" 
                                 placeholder="Type something here" 
                                 value={noteValue}

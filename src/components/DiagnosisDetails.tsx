@@ -6,7 +6,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import '../pages/signin.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus, faShare, faAngleDown } from '@fortawesome/free-solid-svg-icons';
-const DiagnosisDetails = () => {
+const DiagnosisDetails = (props) => {
   
   const [isCardOpen, setCardOpen] = useState(false);
   const [popupOpen, setPopupOpen] = useState(false);
@@ -25,16 +25,17 @@ const DiagnosisDetails = () => {
     patientId: '',
   }); 
 
-  const userId = localStorage.getItem("userId");
   const userType = localStorage.getItem("userType");
 
-  const getDiagnosis = useQuery(api.healthRecord.getDiagnosisDetails, { patientId: userId });
+  const patientId = props.patientId;
+
+  const getDiagnosis = useQuery(api.healthRecord.getDiagnosisDetails, { patientId: patientId });
   const createDiagnosis = useMutation(api.healthRecord.createDiagnosisDetails);
   // const updateDiagnosis = useMutation(api.healthRecord.updateDiagnosisDetails);
   const deleteDiagnosis = useMutation(api.healthRecord.deleteDiagnosisDetails);
 
-  const showDeleteConfirmation = (userId: string) => {
-    setUserToDeleteId(userId);
+  const showDeleteConfirmation = (patientId: string) => {
+    setUserToDeleteId(patientId);
     setDeleteConfirmationVisible(true);
   };
 
@@ -100,7 +101,7 @@ const DiagnosisDetails = () => {
     diagnosisdata.append('treatment', diagnosisData.treatment);
   
     try {
-     await createDiagnosis({ ...diagnosisData, patientId: userId});
+     await createDiagnosis({ ...diagnosisData, patientId: patientId});
   
       setDiagnosisData({
         diagnosis: '',
@@ -124,9 +125,9 @@ const DiagnosisDetails = () => {
       } 
   };
 
-  const deleteDiagnosisDetails = async (userId: any) => {
+  const deleteDiagnosisDetails = async (patientId: any) => {
     try {
-      await deleteDiagnosis({ id: userId});
+      await deleteDiagnosis({ id: patientId});
       toast.success('Successfully deleted record', {
         position: toast.POSITION.TOP_RIGHT,
         autoClose: 3000, 
@@ -153,7 +154,7 @@ const DiagnosisDetails = () => {
           Diagnosis Information
         </div>
         <div className="flex flex-row mb-5 items-center gap-10 justify-end">
-        {userType === 'patient' && (
+        {userType === 'doctor' && (
             <>
           <button
             ref={trigger}
@@ -294,7 +295,7 @@ const DiagnosisDetails = () => {
               </h4>
             </div>
 
-            {userType === 'patient' && (
+            {userType === 'doctor' && (
             <>
             <button
                 onClick={() => showDeleteConfirmation(user._id)}
